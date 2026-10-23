@@ -4,7 +4,7 @@
 <meta name="theme-color" content="#0b0e13"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Prep Scan"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><title>Prep Scan</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Ctext y=%22.9em%22 font-size=%2290%22%3E📦%3C/text%3E%3C/svg%3E">
-<!-- CookStars · 📱 Prep Scan v5 (23/10/2026) — redesign: lane-coloured screens, big lane banner, ‹ BOX › flick, same-size live camera panel,
+<!-- CookStars · 📱 Prep Scan v6 (23/10/2026) — ⚡ opens instantly from its saved copy and uses Prep’s quick scanner call (server v40+) · v5 redesign: lane-coloured screens, big lane banner, ‹ BOX › flick, same-size live camera panel,
      what's-in-the-box list with ✎ / 🗑, 🎧 voice tour, ⚙ phone settings (text size etc). ONE file for both places:
      inside Google (prep_scan.html) and on its own web page (GitHub index.html — talks to Prep server v39+ through its scanner door). -->
 <style>
@@ -113,7 +113,7 @@ button{font-family:inherit;color:inherit}
   /* ---------- data ---------- */
   function S() { return Object.assign({ heavyKg: 15, boxColours: ['#2EC4A4', '#F0A245', '#E5484D', '#9B7BFF', '#F472B6', '#5B9CF6'] }, (D && D.settings) || {}); }
   function col(b) { var C = S().boxColours; return C[((Number(b.no) || 1) - 1) % C.length]; }
-  function picOf(fn, sku) { var P = (D && D.pics) || [], r = P.find(function (x) { return (fn && x[1] === fn) || (sku && x[0] === sku); }); if (r && r[3]) return r[3]; var L = ((D && D.inv && D.inv.lines) || []).find(function (x) { return x.image && ((fn && x.fnsku === fn) || (sku && x.sku === sku)); }); return L ? L.image : ''; }
+  function picOf(fn, sku) { var P = (D && D.pics) || [], r = P.find(function (x) { return (fn && x[1] === fn) || (sku && x[0] === sku); }); if (r && r[3]) return r[3]; var it = ((PB && PB.items) || []).find(function (x) { return x.image && x.fnsku === fn; }); if (it) return it.image; var L = ((D && D.inv && D.inv.lines) || []).find(function (x) { return x.image && ((fn && x.fnsku === fn) || (sku && x.sku === sku)); }); return L ? L.image : ''; }
   function asinOf(fn, sku) { var L = ((D && D.inv && D.inv.lines) || []).find(function (x) { return (fn && x.fnsku === fn) || (sku && x.sku === sku); }); if (L && L.asin) return L.asin; var r = ((D && D.pics) || []).find(function (x) { return (fn && x[1] === fn) || (sku && x[0] === sku); }); return r ? r[2] : ''; }
   function lane(l) { var lab = {}, P = PB || { boxes: [], items: [] };
     ((D && D.rcpts) || []).forEach(function (r) { if (r.status !== 'labelled' || (r.lane || 'Standard') !== l || !r.fnsku) return; var x = lab[r.fnsku] = lab[r.fnsku] || { fnsku: r.fnsku, sku: r.sku, item: r.item, units: 0 }; x.units += r.qty; });
@@ -124,16 +124,22 @@ button{font-family:inherit;color:inherit}
     return { rows: rows, boxes: boxes, units: rows.reduce(function (t, r) { return t + r.units; }, 0), boxed: rows.reduce(function (t, r) { return t + r.boxed; }, 0), left: rows.reduce(function (t, r) { return t + r.left; }, 0) }; }
   function boxUnits(d, b) { return d.rows.reduce(function (t, r) { return t + (r.inBox[b.id] || 0); }, 0); }
   function curBox(d) { return d.boxes.find(function (b) { return b.id === BOXID; }) || d.boxes[d.boxes.length - 1] || null; }
-  function load(quiet) { if (LOADING) return; LOADING = true; if (!quiet) paint();
-    Promise.all([run('opsd_prepBoot'), run('opsd_prepBoxData')]).then(function (r) { LOADING = false; if (Q.length) return; D = r[0]; PB = r[1]; if (quiet && SCREEN === 'scan') paintScan(); else paint(); })
-      .catch(function (e) { LOADING = false; var m = String((e && e.message) || e); if (/SIGNED_OUT/.test(m)) { tok = ''; try { localStorage.removeItem(TK); } catch (x) {} SCREEN = 'login'; paint(); } else if (!quiet) { toast('⚠ ' + m); paint(); } }); }
+  var CK = 'cs_scan_cache', FAST = true, LOADED = 0;
+  function cacheSave() { try { localStorage.setItem(CK, JSON.stringify({ D: D, PB: PB, at: Date.now(), who: tok.slice(0, 8) })); } catch (e) {} }
+  function cacheLoad() { try { var c = JSON.parse(localStorage.getItem(CK) || 'null'); if (c && c.D && c.PB && c.who === tok.slice(0, 8)) { D = c.D; PB = c.PB; return true; } } catch (e) {} return false; }
+  function fetchAll() { if (FAST) return run('opsd_prepScanData').then(function (r) { return [{ user: r.user, rcpts: r.rcpts, settings: r.settings, eans: r.eans, pics: r.pics, inv: { lines: [] } }, r.box]; })
+      .catch(function (e) { if (/isn’t allowed|is not a function|not defined|Script function not found/i.test(String((e && e.message) || e))) { FAST = false; return fetchAll(); } throw e; });
+    return Promise.all([run('opsd_prepBoot'), run('opsd_prepBoxData')]); }
+  function load(quiet) { if (LOADING) return; LOADING = true; if (!quiet) paint(); paintSave();
+    fetchAll().then(function (r) { LOADING = false; LOADED = Date.now(); if (Q.length) { paintSave(); return; } D = r[0]; PB = r[1]; cacheSave(); if (SCREEN === 'scan' && $('s_root')) paintScan(); else paint(); setTimeout(function () { camLib().catch(function () {}); }, 1200); })
+      .catch(function (e) { LOADING = false; paintSave(); var m = String((e && e.message) || e); if (/SIGNED_OUT/.test(m)) { tok = ''; try { localStorage.removeItem(TK); localStorage.removeItem(CK); } catch (x) {} D = PB = null; SCREEN = 'login'; paint(); } else if (!quiet) { toast('⚠ ' + m); paint(); } else toast('⚠ Couldn’t refresh — showing your last copy'); }); }
   /* ---------- saving: one at a time, retried, never dropped ---------- */
-  function q(fn, args, after) { Q.push({ fn: fn, args: args, after: after, n: 0 }); pump(); paintSave(); }
+  function q(fn, args, after) { Q.push({ fn: fn, args: args, after: after, n: 0 }); pump(); paintSave(); cacheSave(); }
   function pump() { if (QBUSY || !Q.length) return; QBUSY = true; var j = Q[0], a = typeof j.args === 'function' ? j.args() : j.args;
     run.apply(null, [j.fn].concat(a)).then(function (r) { Q.shift(); QBUSY = false; QBAD = 0; if (j.after) try { j.after(r); } catch (e) {} paintSave(); pump(); })
       .catch(function (e) { QBUSY = false; j.n++; var m = String((e && e.message) || e); if (/SIGNED_OUT/.test(m) || j.n >= 4) { QBAD = 1; paintSave(); if (j.n >= 4) toast('⚠ Not saved yet — tap the red “not saved” to try again'); return; } setTimeout(pump, 800 * j.n); }); }
   window.addEventListener('beforeunload', function (e) { if (Q.length) { e.preventDefault(); e.returnValue = 'Still saving'; } });
-  function paintSave() { var s = $('sv'); if (!s) return; s.className = 'sv' + (QBAD ? ' bad' : Q.length ? ' on' : ''); s.textContent = QBAD ? '⚠ not saved · retry' : Q.length ? '⏳ saving ' + Q.length : '✓ saved'; }
+  function paintSave() { var s = $('sv'); if (!s) return; s.className = 'sv' + (QBAD ? ' bad' : Q.length || LOADING ? ' on' : ''); s.textContent = QBAD ? '⚠ not saved · retry' : Q.length ? '⏳ saving ' + Q.length : LOADING ? '↻ updating' : '✓ up to date'; }
   window.ps_retry = function () { if (!QBAD) return; QBAD = 0; Q.forEach(function (j) { j.n = 0; }); pump(); paintSave(); };
   /* ---------- screens ---------- */
   function theme(c) { document.documentElement.style.setProperty('--L', c); var m = document.querySelector('meta[name=theme-color]'); if (m) m.content = '#0b0e13'; }
@@ -141,6 +147,7 @@ button{font-family:inherit;color:inherit}
     if (!GS && !API) { theme('#8b95a7'); A.innerHTML = '<div class="top"><span class="ttl">📦 Prep Scan</span></div><div style="font-size:15px;line-height:1.5">To connect, open Prep on the computer → <b>Boxing → 📱 Prep Scan</b> (it opens this page already connected).<br><br>Or paste your Prep link here (it ends in <b>/exec</b>):</div><input class="in" id="apiin" style="font-size:15px" placeholder="https://script.google.com/macros/s/…/exec"><button class="btn solid" style="--c:#2EC4A4" onclick="ps_setApi()">Connect</button>'; return; }
     if (!tok) SCREEN = 'login';
     if (SCREEN === 'login') { theme('#8b95a7'); A.innerHTML = '<div class="top"><span class="ttl">📦 Prep Scan</span></div><div style="font-size:15px;opacity:.85">Who’s scanning?</div><div class="whoB"><button class="btn' + (WHO === 'prep' ? ' on' : '') + '" style="--c:#2EC4A4" onclick="ps_who(\'prep\')">👥 Prep</button><button class="btn' + (WHO === 'martin' ? ' on' : '') + '" style="--c:#E879F9" onclick="ps_who(\'martin\')">👤 Martin</button></div><input class="in" id="pin" type="password" inputmode="numeric" autocomplete="off" placeholder="Your Prep code"><button class="btn solid" style="--c:#2EC4A4" onclick="ps_login()">Sign in</button><div class="note">Same code as the Prep app.</div>'; var p = $('pin'); p.onkeydown = function (e) { if (e.key === 'Enter') ps_login(); }; return; }
+    if ((!D || !PB) && cacheLoad()) { setTimeout(function () { load(true); }, 30); }
     if (!D || !PB) { theme('#8b95a7'); A.innerHTML = '<div class="top"><span class="ttl">📦 Prep Scan</span></div><div class="note" style="margin-top:40px;font-size:16px">⏳ Loading the lanes…</div>'; if (!LOADING) load(); return; }
     if (SCREEN === 'lanes') return paintLanes();
     paintScan(true); }
@@ -179,7 +186,7 @@ button{font-family:inherit;color:inherit}
   window.ps_login = function () { var pin = ($('pin') || {}).value || ''; if (!pin) return; run('opsd_prepLogin', WHO, pin).then(function (r) { tok = r.token; try { localStorage.setItem(TK, tok); } catch (e) {} SCREEN = 'lanes'; D = PB = null; paint(); }).catch(function (e) { snd('bad'); toast('⚠ ' + String((e && e.message) || e)); }); };
   window.ps_lane = function (l) { LANE = l; var d = lane(l); BOXID = d.boxes.length ? d.boxes[d.boxes.length - 1].id : ''; LAST = null; LASTFN = ''; UNDO = []; SCREEN = 'scan'; paint(); if (PS.autocam && d.boxes.length) setTimeout(ps_cam, 200); };
   window.ps_home = function () { camOff(); SCREEN = 'lanes'; paint(); };
-  window.ps_reload = function () { D = PB = null; paint(); };
+  window.ps_reload = function () { load(true); toast('↻ Updating…'); };
   window.ps_flick = function (dlt) { var d = lane(LANE), b = curBox(d), i = d.boxes.indexOf(b) + dlt; if (i < 0 || i >= d.boxes.length) return; BOXID = d.boxes[i].id; LASTFN = ''; paintScan(); };
   /* ---------- scanning ---------- */
   function setQ(b, r, qn, noUndo) { var it = PB.items.find(function (x) { return x.box === b.id && x.fnsku === r.fnsku; }), cur = it ? it.qty : 0; if (!noUndo) UNDO.push([{ b: b, r: r, prev: cur }]);
@@ -289,7 +296,7 @@ button{font-family:inherit;color:inherit}
       '<button class="btn solid" style="--c:#2EC4A4;margin-top:12px" onclick="ps_ok()">✓ Done</button></div></div>'; }
   function sw(k, l, s) { return '<div class="srow"><div><b>' + l + '</b><small>' + s + '</small></div><button class="sw' + (PS[k] ? ' on' : '') + '" onclick="ps_ps(\'' + k + '\',' + !PS[k] + ')" aria-label="' + E(l) + '"></button></div>'; }
   window.ps_ps = function (k, v) { PS[k] = v; savePS(); if (MODAL === 'set') paintSet(); };
-  window.ps_signout = function () { tok = ''; try { localStorage.removeItem(TK); } catch (e) {} D = PB = null; MODAL = ''; $('ov').innerHTML = ''; camOff(); SCREEN = 'login'; var f = $('foot'); if (f) f.remove(); paint(); };
+  window.ps_signout = function () { tok = ''; try { localStorage.removeItem(TK); localStorage.removeItem(CK); } catch (e) {} D = PB = null; MODAL = ''; $('ov').innerHTML = ''; camOff(); SCREEN = 'login'; var f = $('foot'); if (f) f.remove(); paint(); };
   /* ---------- 🎧 the tour (spotlight + natural voice, one sentence at a time) ---------- */
   var TS = [
     { s: 'lanes', q: '.ttl', t: 'Welcome to Prep Scan', x: 'Hello! This is Prep Scan — the quick way to put items into boxes using your phone. I’ll show you everything it does. It only takes a couple of minutes. Tap Next whenever you’re ready, or Back to hear something again.' },
