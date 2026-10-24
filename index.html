@@ -4,7 +4,8 @@
 <meta name="theme-color" content="#0b0e13"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Prep Scan"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><title>Prep Scan</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Ctext y=%22.9em%22 font-size=%2290%22%3E📦%3C/text%3E%3C/svg%3E">
-<!-- CookStars · 📱 Prep Scan v25 (24/10/2026) — tap “N left to box” on a lane to see what’s left
+<!-- CookStars · 📱 Prep Scan v26 (24/10/2026) — the boxed-item flash stays 1 second longer (2.5 s)
+<!-- v25 (24/10/2026) — tap “N left to box” on a lane to see what’s left
 <!-- v24 (24/10/2026) — ready sound is now a bright little “ting”
 <!-- v23 (24/10/2026) — countdown ticks removed · buzz-buzz vibration when ready to scan (Android)
 <!-- v22 (24/10/2026) — the camera stays on behind the All boxed / Wrong lane pop-ups
@@ -181,7 +182,7 @@ a.amz{color:inherit;text-decoration:underline;text-decoration-color:rgba(138,180
     A.innerHTML = '<div class="top"><span class="ttl">📦 Prep Scan</span><span class="sp"></span><span class="sv" id="sv" onclick="ps_retry()"></span><button class="icb" id="b_tour" onclick="ps_tour()" title="Take the tour">🎧</button><button class="icb" id="b_set" onclick="ps_settings()" title="Settings">⚙</button></div><div class="who">👥 ' + E(me) + ' · which lane are you boxing?</div><div class="lanes" id="lanes">' +
       LN.map(function (l) { var d = lane(l), nb = d.boxes.length, any = d.units || nb, pc = d.units ? Math.round(d.boxed / d.units * 100) : 0;
         return '<button class="lane' + (any ? '' : ' empty') + '" style="--c:' + LC[l] + '" onclick="ps_lane(\'' + l + '\')"><div class="t"><b>' + LI[l] + ' ' + l + '</b><span>›</span></div><div class="big">' + (d.left ? '<span class="leftb" onclick="event.stopPropagation();ps_left(\'' + l + '\')"><b>' + d.left + '</b>left to box ›</span>' : any ? '<b>0</b>left to box' : '<b>0</b>nothing to box') + '</div><div class="g3"><div>To box<b>' + d.units + '</b></div><div>Boxed<b>' + d.boxed + '</b></div><div>Boxes<b>' + nb + '</b></div></div><div class="bar"><i style="width:' + pc + '%"></i></div></button>'; }).join('') + '</div>' +
-      '<div class="row2"><button class="btn" id="b_sup" style="--c:#2EC4A4;padding:11px" onclick="ps_sup()">🧰 Supplies</button><button class="btn" style="--c:#8b95a7;padding:11px" onclick="ps_reload()">↻ Refresh</button></div>' + '<div class="note" style="margin-top:-2px">Prep Scan v25' + (GS ? ' · inside Google' : '') + '</div>';
+      '<div class="row2"><button class="btn" id="b_sup" style="--c:#2EC4A4;padding:11px" onclick="ps_sup()">🧰 Supplies</button><button class="btn" style="--c:#8b95a7;padding:11px" onclick="ps_reload()">↻ Refresh</button></div>' + '<div class="note" style="margin-top:-2px">Prep Scan v26' + (GS ? ' · inside Google' : '') + '</div>';
     var f = $('foot'); if (f) f.remove(); paintSave(); }
   /* the scan screen: built once, then only its parts are refreshed (so the live camera keeps running) */
   function paintScan(full) { var A = $('app'), d = lane(LANE); theme(LC[LANE]); setTimeout(function () { if (typeof psFit === 'function') psFit(); }, 0); setTimeout(function () { if (typeof psFit === 'function') psFit(); }, 120);
@@ -465,7 +466,7 @@ var PSFL = null;
 function psFlash(item, img, boxNo, colr, sub) { var o = document.getElementById('psfl'); if (o) o.remove(); clearTimeout(PSFL); var d = document.createElement('div'); d.id = 'psfl'; d.style.setProperty('--bc', colr || '#2EC4A4');
   var esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
   d.innerHTML = '<div class="c"><span class="p' + (img ? '' : ' none') + '" style="' + (img ? 'background-image:url(\'' + esc(img) + '\')' : '') + '"></span><div class="t">' + esc(item) + '</div><div class="b">＋1 → BOX ' + esc(boxNo) + '</div>' + (sub ? '<div class="s">' + esc(sub) + '</div>' : '') + '</div>';
-  document.body.appendChild(d); requestAnimationFrame(function () { d.classList.add('on'); }); PSFL = setTimeout(function () { d.classList.remove('on'); setTimeout(function () { d.remove(); }, 220); }, 1500); }
+  document.body.appendChild(d); requestAnimationFrame(function () { d.classList.add('on'); }); PSFL = setTimeout(function () { d.classList.remove('on'); setTimeout(function () { d.remove(); }, 220); }, 2500); }
 function psFit() { var A = document.getElementById('app'), L = document.getElementById('s_list'); if (!A || !L) return; var f = document.getElementById('foot'), fh = f ? f.getBoundingClientRect().height : 0;
   document.body.classList.add('psfit'); var cs = getComputedStyle(A), z = parseFloat(cs.zoom) || 1; A.style.minHeight = '0'; A.style.paddingBottom = '0px'; var top = A.getBoundingClientRect().top;
   A.style.display = 'flex'; A.style.flexDirection = 'column'; A.style.overflow = 'hidden'; A.style.height = Math.max(60, Math.floor((window.innerHeight - top - fh) / z)) + 'px';
