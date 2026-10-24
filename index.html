@@ -4,7 +4,8 @@
 <meta name="theme-color" content="#0b0e13"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Prep Scan"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><title>Prep Scan</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Ctext y=%22.9em%22 font-size=%2290%22%3E📦%3C/text%3E%3C/svg%3E">
-<!-- CookStars · 📱 Prep Scan v31 (24/10/2026) — no ＋ new box when everything in the lane is boxed
+<!-- CookStars · 📱 Prep Scan v32 (24/10/2026) — windows always fit the screen at any text size (Huge cut the settings off) · ?size=normal resets the text size
+<!-- v31 (24/10/2026) — no ＋ new box when everything in the lane is boxed
 <!-- v30 (24/10/2026) — tap a picture: big picture + name + which boxes · over 15 kg: “must be labelled HEAVY”
 <!-- v29 (24/10/2026) — lane button shows just the emoji + lane name, big (no “OPEN LANE”)
 <!-- v28 (24/10/2026) — complete voice tour of everything Prep Scan does (19 steps)
@@ -121,6 +122,7 @@ a.amz{color:inherit;text-decoration:underline;text-decoration-color:rgba(138,180
   /* ---------- this phone’s settings ---------- */
   var PK = 'cs_scan_set', PS = { scale: 1.15, sound: true, vib: true, voice: '', speed: 1, autocam: false, bt: false };
   try { Object.assign(PS, JSON.parse(localStorage.getItem(PK) || '{}')); } catch (e) {}
+  try { var szq = (new URLSearchParams(location.search).get('size') || '').toLowerCase(), SZM = { normal: 1, large: 1.15, xlarge: 1.3, huge: 1.5 }; if (SZM[szq]) { PS.scale = SZM[szq]; localStorage.setItem(PK, JSON.stringify(PS)); } } catch (e) {}
   function savePS() { try { localStorage.setItem(PK, JSON.stringify(PS)); } catch (e) {} applyPS(); }
   function applyPS() { document.documentElement.style.setProperty('--zoom', PS.scale); }
   applyPS();
@@ -191,7 +193,7 @@ a.amz{color:inherit;text-decoration:underline;text-decoration-color:rgba(138,180
           : d.left ? '<button class="lb out" onclick="ps_left(\'' + l + '\')"><small>📋 LEFT TO BOX</small><big>' + d.left + '</big><small>see list ›</small></button>'
           : '<div class="lb out off"><small>📋 LEFT TO BOX</small><big>0</big><small>nothing to box</small></div>';
         return '<div class="lane' + (any ? '' : ' empty') + '" style="--c:' + LC[l] + '"><div class="lsplit">' + left + '<button class="lb solid lname" onclick="ps_lane(\'' + l + '\')"><span class="le">' + LI[l] + '</span><span class="ln">' + l + ' ›</span></button></div><div class="g3"><div>To box<b>' + d.units + '</b></div><div>Boxed<b>' + d.boxed + '</b></div><div>Boxes<b>' + nb + '</b></div></div><div class="bar"><i style="width:' + pc + '%"></i></div></div>'; }).join('') + '</div>' +
-      '<div class="row2"><button class="btn" id="b_sup" style="--c:#2EC4A4;padding:11px" onclick="ps_sup()">🧰 Supplies</button><button class="btn" style="--c:#8b95a7;padding:11px" onclick="ps_reload()">↻ Refresh</button></div>' + '<div class="note" style="margin-top:-2px">Prep Scan v31' + (GS ? ' · inside Google' : '') + '</div>';
+      '<div class="row2"><button class="btn" id="b_sup" style="--c:#2EC4A4;padding:11px" onclick="ps_sup()">🧰 Supplies</button><button class="btn" style="--c:#8b95a7;padding:11px" onclick="ps_reload()">↻ Refresh</button></div>' + '<div class="note" style="margin-top:-2px">Prep Scan v32' + (GS ? ' · inside Google' : '') + '</div>';
     var f = $('foot'); if (f) f.remove(); paintSave(); setTimeout(fitLaneNames, 0); }
   /* v29 — the lane names always fit their buttons, at the same size on all three cards */
   function fitLaneNames() { var N = [].slice.call(document.querySelectorAll('#lanes .lb.lname .ln')); if (!N.length) return; N.forEach(function (n) { n.style.fontSize = ''; });
@@ -446,6 +448,8 @@ a.amz{color:inherit;text-decoration:underline;text-decoration-color:rgba(138,180
   paint();
 })();
 </script>
+<style>/* Prep Scan v32 — every window fits the screen at any text size */
+.sheet{max-height:calc(90dvh / var(--zoom,1))!important}.err{max-height:calc(88dvh / var(--zoom,1))!important}.ov.mid{padding:calc(16px / var(--zoom,1))}</style>
 <style>/* Prep Scan v30 — big picture */
 .bigpic{width:100%;max-width:300px;aspect-ratio:1;margin:0 auto 10px;border-radius:18px;background:#fff center/contain no-repeat;box-shadow:0 0 0 3px color-mix(in srgb,var(--L) 45%,transparent)}.bigpic.none{background:#1b2230;display:flex;align-items:center;justify-content:center;font-size:60px}
 .bpn{font-size:17px;font-weight:900;text-align:center;line-height:1.3}.bpf{font-family:ui-monospace,Consolas,monospace;font-size:13px;color:var(--mut);text-align:center;margin-top:2px}</style>
