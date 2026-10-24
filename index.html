@@ -4,7 +4,11 @@
 <meta name="theme-color" content="#0b0e13"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Prep Scan"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><title>Prep Scan</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Ctext y=%22.9em%22 font-size=%2290%22%3E📦%3C/text%3E%3C/svg%3E">
-<!-- CookStars · 📱 Prep Scan v18 (24/10/2026) — clearer “ready” sound (bip-bip ↑) when the scanner can scan again
+<!-- CookStars · 📱 Prep Scan v22 (24/10/2026) — the camera stays on behind the All boxed / Wrong lane pop-ups
+<!-- v21 (24/10/2026) — box lists: the unit count is as big and bold as the box name
+<!-- v20 (24/10/2026) — countdown circle in the middle of the camera: 5 4 3 2 1 → SCAN, with a soft tick on each number
+<!-- v19 (24/10/2026) — tap an item’s picture to see which boxes it’s in · no Amazon links on item names
+<!-- v18 (24/10/2026) — clearer “ready” sound (bip-bip ↑) when the scanner can scan again
 <!-- v17 (24/10/2026) — a barcode Prep doesn’t recognise: no pop-up, just “scan the label again” (camera keeps running)
 <!-- v16 (24/10/2026) — ＋ on the last box starts a new box · recent scans strip removed
 <!-- v15 (24/10/2026) — refreshes every 20 s (camera on too) + ↻ button · a refused save shows why and never gets stuck · deleting a box takes its units out first (Prep server v56)
@@ -120,7 +124,7 @@ a.amz{color:inherit;text-decoration:underline;text-decoration-color:rgba(138,180
   var AC = null; function snd(k) { if (PS.sound) try { AC = AC || new (window.AudioContext || window.webkitAudioContext)(); var o = AC.createOscillator(), g = AC.createGain(); o.connect(g); g.connect(AC.destination); o.frequency.value = k === 'bad' ? 200 : 880; g.gain.setValueAtTime(0.0001, AC.currentTime); g.gain.exponentialRampToValueAtTime(0.25, AC.currentTime + 0.01); g.gain.exponentialRampToValueAtTime(0.0001, AC.currentTime + (k === 'bad' ? 0.45 : 0.12)); o.start(); o.stop(AC.currentTime + 0.5); } catch (e) {}
     if (PS.vib) try { navigator.vibrate && navigator.vibrate(k === 'bad' ? [120, 80, 120] : 50); } catch (e) {} }
   /* v11 — a clear two-note “scanned” chime, and a soft “ready” tick when the 5-second lock ends (follow the Sounds switch) */
-  function chime(k) { if (!PS.sound) return; try { AC = AC || new (window.AudioContext || window.webkitAudioContext)(); var t0 = AC.currentTime, N = k === 'ready' ? [[523, 0, 0.07, 0.24], [784, 0.09, 0.09, 0.24]] : [[988, 0, 0.13, 0.28], [1319, 0.1, 0.2, 0.26]];
+  function chime(k) { if (!PS.sound) return; try { AC = AC || new (window.AudioContext || window.webkitAudioContext)(); var t0 = AC.currentTime, N = k === 'tick' ? [[1250, 0, 0.035, 0.07]] : k === 'ready' ? [[523, 0, 0.07, 0.24], [784, 0.09, 0.09, 0.24]] : [[988, 0, 0.13, 0.28], [1319, 0.1, 0.2, 0.26]];
     N.forEach(function (n) { var o = AC.createOscillator(), g = AC.createGain(); o.type = 'sine'; o.frequency.value = n[0]; o.connect(g); g.connect(AC.destination); g.gain.setValueAtTime(0.0001, t0 + n[1]); g.gain.exponentialRampToValueAtTime(n[3], t0 + n[1] + 0.01); g.gain.exponentialRampToValueAtTime(0.0001, t0 + n[1] + n[2]); o.start(t0 + n[1]); o.stop(t0 + n[1] + n[2] + 0.05); }); } catch (e) {} }
   var IOS = /iPhone|iPad|iPod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
   /* ---------- data ---------- */
@@ -128,7 +132,7 @@ a.amz{color:inherit;text-decoration:underline;text-decoration-color:rgba(138,180
   function col(b) { var C = S().boxColours; return C[((Number(b.no) || 1) - 1) % C.length]; }
   function asinOf(fn, sku) { var P = (D && D.pics) || [], r = P.find(function (x) { return x[2] && ((fn && x[1] === fn) || (sku && x[0] === sku)); }); return r ? r[2] : ''; }
   /* v9 — every item name links to its Amazon listing */
-  function amzA(fn, sku, name) { var a = asinOf(fn, sku); return a ? '<a class="amz" href="https://www.amazon.co.uk/dp/' + encodeURIComponent(a) + '" target="_blank" rel="noopener" onclick="event.stopPropagation()">' + E(name) + ' ↗</a>' : E(name); }
+  function amzA(fn, sku, name) { return E(name); }   /* v19 — no Amazon links in Prep Scan: names are plain text */
   function picOf(fn, sku) { var P = (D && D.pics) || [], r = P.find(function (x) { return (fn && x[1] === fn) || (sku && x[0] === sku); }); if (r && r[3]) return r[3]; var it = ((PB && PB.items) || []).find(function (x) { return x.image && x.fnsku === fn; }); if (it) return it.image; var L = ((D && D.inv && D.inv.lines) || []).find(function (x) { return x.image && ((fn && x.fnsku === fn) || (sku && x.sku === sku)); }); return L ? L.image : ''; }
   function asinOf(fn, sku) { var L = ((D && D.inv && D.inv.lines) || []).find(function (x) { return (fn && x.fnsku === fn) || (sku && x.sku === sku); }); if (L && L.asin) return L.asin; var r = ((D && D.pics) || []).find(function (x) { return (fn && x[1] === fn) || (sku && x[0] === sku); }); return r ? r[2] : ''; }
   function lane(l) { var lab = {}, P = PB || { boxes: [], items: [] };
@@ -174,7 +178,7 @@ a.amz{color:inherit;text-decoration:underline;text-decoration-color:rgba(138,180
     A.innerHTML = '<div class="top"><span class="ttl">📦 Prep Scan</span><span class="sp"></span><span class="sv" id="sv" onclick="ps_retry()"></span><button class="icb" id="b_tour" onclick="ps_tour()" title="Take the tour">🎧</button><button class="icb" id="b_set" onclick="ps_settings()" title="Settings">⚙</button></div><div class="who">👥 ' + E(me) + ' · which lane are you boxing?</div><div class="lanes" id="lanes">' +
       LN.map(function (l) { var d = lane(l), nb = d.boxes.length, any = d.units || nb, pc = d.units ? Math.round(d.boxed / d.units * 100) : 0;
         return '<button class="lane' + (any ? '' : ' empty') + '" style="--c:' + LC[l] + '" onclick="ps_lane(\'' + l + '\')"><div class="t"><b>' + LI[l] + ' ' + l + '</b><span>›</span></div><div class="big">' + (any ? '<b>' + d.left + '</b>left to box' : '<b>0</b>nothing to box') + '</div><div class="g3"><div>To box<b>' + d.units + '</b></div><div>Boxed<b>' + d.boxed + '</b></div><div>Boxes<b>' + nb + '</b></div></div><div class="bar"><i style="width:' + pc + '%"></i></div></button>'; }).join('') + '</div>' +
-      '<div class="row2"><button class="btn" id="b_sup" style="--c:#2EC4A4;padding:11px" onclick="ps_sup()">🧰 Supplies</button><button class="btn" style="--c:#8b95a7;padding:11px" onclick="ps_reload()">↻ Refresh</button></div>' + '<div class="note" style="margin-top:-2px">Prep Scan v18' + (GS ? ' · inside Google' : '') + '</div>';
+      '<div class="row2"><button class="btn" id="b_sup" style="--c:#2EC4A4;padding:11px" onclick="ps_sup()">🧰 Supplies</button><button class="btn" style="--c:#8b95a7;padding:11px" onclick="ps_reload()">↻ Refresh</button></div>' + '<div class="note" style="margin-top:-2px">Prep Scan v22' + (GS ? ' · inside Google' : '') + '</div>';
     var f = $('foot'); if (f) f.remove(); paintSave(); }
   /* the scan screen: built once, then only its parts are refreshed (so the live camera keeps running) */
   function paintScan(full) { var A = $('app'), d = lane(LANE); theme(LC[LANE]); setTimeout(function () { if (typeof psFit === 'function') psFit(); }, 0); setTimeout(function () { if (typeof psFit === 'function') psFit(); }, 120);
@@ -193,7 +197,7 @@ a.amz{color:inherit;text-decoration:underline;text-decoration-color:rgba(138,180
     else $('s_box').innerHTML = '<div class="nobox" id="s_card"><div style="font-size:15px;margin-bottom:10px">No box open in ' + E(LANE) + ' yet</div><button class="btn solid" style="--c:var(--L)" onclick="ps_new()">＋ Start Box 1</button></div>';
     var items = b ? PB.items.filter(function (x) { return x.box === b.id && x.qty > 0; }) : [], tot = items.reduce(function (t, x) { return t + x.qty; }, 0);
     $('s_lh').innerHTML = '<span>' + (b ? 'IN BOX ' + b.no + ' · ' + tot + ' UNIT' + (tot === 1 ? '' : 'S') : 'NO BOX YET') + '</span>' + (b ? '<button class="lhdel" title="Delete this box" onclick="ps_boxDel(\'' + b.id + '\')">🗑 Delete box</button>' : '<span>empty</span>');
-    var LY = $('s_list').scrollTop; $('s_list').innerHTML = items.length ? items.map(function (x) { var im = picOf(x.fnsku, x.sku); return '<div class="it' + (x.fnsku === LASTFN ? ' new' : '') + '"><div class="pic' + (im ? '' : ' none') + '" style="' + (im ? 'background-image:url(\'' + E(im) + '\')' : '') + '"></div><div style="min-width:0"><b>' + amzA(x.fnsku, x.sku, x.item) + '</b><small>' + E(x.fnsku) + (x.fnsku === LASTFN ? ' · just now' : '') + '</small></div><div class="q"><b>× ' + x.qty + '</b><button class="ic" style="--c:#8AB4F8" title="Change" onclick="ps_edit(\'' + J(x.fnsku) + '\')">✎</button><button class="ic" style="--c:#E5484D" title="Take out of the box" onclick="ps_del(\'' + J(x.fnsku) + '\')">🗑</button></div></div>'; }).join('')
+    var LY = $('s_list').scrollTop; $('s_list').innerHTML = items.length ? items.map(function (x) { var im = picOf(x.fnsku, x.sku); return '<div class="it' + (x.fnsku === LASTFN ? ' new' : '') + '"><div class="pic tap' + (im ? '' : ' none') + '" title="Which boxes is this in?" onclick="ps_where(\'' + J(x.fnsku) + '\')" style="' + (im ? 'background-image:url(\'' + E(im) + '\')' : '') + '"></div><div style="min-width:0"><b>' + amzA(x.fnsku, x.sku, x.item) + '</b><small>' + E(x.fnsku) + (x.fnsku === LASTFN ? ' · just now' : '') + '</small></div><div class="q"><b>× ' + x.qty + '</b><button class="ic" style="--c:#8AB4F8" title="Change" onclick="ps_edit(\'' + J(x.fnsku) + '\')">✎</button><button class="ic" style="--c:#E5484D" title="Take out of the box" onclick="ps_del(\'' + J(x.fnsku) + '\')">🗑</button></div></div>'; }).join('')
       : '<div class="empty2">' + (b ? 'Nothing in Box ' + b.no + ' yet — scan an item to start' : 'Start a box, then scan') + '</div>';
     try { $('s_list').scrollTop = LY; } catch (e) {}
     var ub = $('b_undo'), fb = $('b_full'); if (ub) ub.disabled = !UNDO.length; if (fb) fb.disabled = !b;
@@ -215,7 +219,8 @@ a.amz{color:inherit;text-decoration:underline;text-decoration-color:rgba(138,180
   function camHint(t, bad) { var h = $('s_hint'); if (h) { h.textContent = t; h.className = 'hint' + (bad ? ' bad' : ''); } }
   function err(kind, title, msg, extra) { camOff(); snd('bad'); MODAL = 'err'; var c = { wrong: '#E5484D', full: '#F0A245', none: '#E5484D', learn: '#2EC4A4', photo: '#F0A245' }[kind] || '#E5484D';
     $('ov').innerHTML = '<div class="ov mid"><div class="err" style="--c:' + c + '"><div class="h">' + ({ wrong: '⚠ WRONG LANE', full: '🛑 ALL BOXED ALREADY', none: '✕ NOT FOUND', learn: '▥ NEW BARCODE', photo: '📸 COULDN’T READ IT' }[kind]) + '</div><b>' + E(title) + '</b><p>' + msg + '</p>' + (extra || '') + '<button class="btn" style="--c:#fff" onclick="ps_ok()">OK</button></div></div>'; }
-  window.ps_ok = function () { MODAL = ''; $('ov').innerHTML = ''; if (SCREEN === 'scan') paintScan(); else paint(); };
+  window.ps_ok = function () { var wasPop = MODAL === 'err'; MODAL = ''; $('ov').innerHTML = ''; if (wasPop && CAM && !CAMARMED) CAMLAST.t = Date.now() - 5000;   /* v22 — after OK: no extra 5-second wait, just take the item away */
+    if (SCREEN === 'scan') paintScan(); else paint(); };
   function scan(code) { var c = String(code || '').trim().toUpperCase().replace(/\s+/g, ''); if (!c) return; var d = lane(LANE), digits = /^\d{8,14}$/.test(c) ? c : '', ean = digits ? ((D.eans || {})[digits]) : null;
     var match = function (r) { return r.fnsku === c || (ean && ((ean.fnsku && r.fnsku === ean.fnsku) || (ean.sku && r.sku === ean.sku) || (ean.asin && asinOf(r.fnsku, r.sku) === ean.asin))); };
     var r = d.rows.find(match);
@@ -227,7 +232,7 @@ a.amz{color:inherit;text-decoration:underline;text-decoration-color:rgba(138,180
   /* v17 — a barcode Prep doesn’t recognise: no pop-up — a low buzz and “scan the label again”; the camera keeps running and is ready again in 1.5 s */
   function unknownScan() { snd('bad'); if (CAM) { camHint('↻ Didn’t recognise that — scan the FNSKU label again', 1); CAMLAST.t = Date.now() - 3500; } else toast('↻ Didn’t recognise that — scan the FNSKU label again'); }
   /* v12 — the All boxed / Wrong lane pop-ups: picture, name, FNSKU, how many and where */
-  function popItem(kind, r, other) { camOff(); snd('bad'); MODAL = 'err'; var im = picOf(r.fnsku, r.sku), c = kind === 'wrong' ? '#E5484D' : '#F0A245';
+  function popItem(kind, r, other) { snd('bad'); MODAL = 'err';   /* v22 — the camera stays on (it ignores barcodes while a pop-up is open) */ var im = picOf(r.fnsku, r.sku), c = kind === 'wrong' ? '#E5484D' : '#F0A245';
     var mid = kind === 'wrong' ? '<p>This belongs in the <b class="in">' + E(other) + '</b> lane — put it to one side for the ' + E(other) + ' boxes.</p><div class="unitsb" style="--c:' + LC[other] + '">' + LI[other] + ' ' + E(other) + ' lane</div>'
       : '<p>All <b class="in">' + r.units + '</b> are in boxes already — check the label on this one.</p><button class="unitsb" style="--c:#F0A245" onclick="ps_where(\'' + J(r.fnsku) + '\')">📦 ' + r.boxed + ' of ' + r.units + ' boxed · where? ›</button>';
     $('ov').innerHTML = '<div class="ov mid"><div class="err pop" style="--c:' + c + '"><div class="h">' + (kind === 'wrong' ? '⚠ WRONG LANE' : '🛑 ALL BOXED ALREADY') + '</div><div class="pp' + (im ? '' : ' none') + '" style="' + (im ? 'background-image:url(\'' + E(im) + '\')' : '') + '"></div><b class="nm">' + amzA(r.fnsku, r.sku, r.item) + '</b><div class="fn">' + E(r.fnsku) + '</div>' + mid + '<button class="btn" style="--c:#fff" onclick="ps_ok()">OK</button></div></div>'; }
@@ -286,17 +291,21 @@ a.amz{color:inherit;text-decoration:underline;text-decoration-color:rgba(138,180
     if (andNew) { ps_new(); toast('✓ Box ' + b.no + ' closed'); } else { toast('📏 Saved'); paintScan(); } };
   /* ---------- 📷 live camera inside the same-size panel ---------- */
   var CAM = null, CAMLIB = 'https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js', CAMLAST = { c: '', t: 0 }, CAMBUSY = false, CAMSEEN = 0, CAMARMED = true;
-  /* v11 — after a camera scan: locked for 5 seconds (countdown), then until the item has been taken away (no barcode seen for 0.7 s) */
+  /* v11 — after a camera scan: locked for 5 seconds, then until the item has been taken away (no barcode seen for 0.7 s)
+     v20 — shown as a big countdown circle in the middle of the camera: 5 4 3 2 1 → SCAN (or MOVE AWAY while the item is still in view) */
+  var CDLAST = '', CDOFF = null;
+  function cdShow(txt, kind) { var c = $('s_cd'); if (!c) return; clearTimeout(CDOFF); if (!txt) { c.className = 'cd'; CDLAST = ''; return; }
+    if (txt !== CDLAST) { var b = c.querySelector('b'); b.textContent = txt; c.className = 'cd on ' + (kind || ''); void c.offsetWidth; c.classList.add('pulse'); CDLAST = txt; if (kind === 'n') chime('tick'); } }
   setInterval(function () { if (CAMARMED || CAMBUSY) return; var now = Date.now(), since = now - CAMLAST.t;
-    if (since < 5000) { if (CAM && !/Didn’t recognise/.test((($('s_hint') || {}).textContent) || '')) camHint('Next scan in ' + Math.ceil((5000 - since) / 1000) + '…'); return; }
-    if (now - CAMSEEN < 700) { if (CAM) camHint('Take the item away, then scan the next one'); return; }
-    CAMARMED = true; if (CAM) { camHint('✓ Ready — scan the next item'); chime('ready'); } }, 200);
+    if (since < 5000) { var n = String(Math.ceil((5000 - since) / 1000)); cdShow(n, 'n'); if (CAM && !/Didn’t recognise/.test((($('s_hint') || {}).textContent) || '')) camHint('Next scan in ' + n + '…'); return; }
+    if (now - CAMSEEN < 700) { cdShow('MOVE AWAY', 'away'); if (CAM) camHint('Take the item away, then scan the next one'); return; }
+    CAMARMED = true; if (CAM) { camHint('✓ Ready — scan the next item'); chime('ready'); cdShow('SCAN', 'go'); CDOFF = setTimeout(function () { cdShow(''); }, 900); } }, 200);
   function camLib() { return new Promise(function (res, rej) { if (window.Html5Qrcode) return res(); var sc = document.createElement('script'); sc.src = CAMLIB; sc.onload = function () { window.Html5Qrcode ? res() : rej(new Error('reader did not load')); }; sc.onerror = function () { rej(new Error('Could not load the barcode reader — check the phone has internet')); }; document.head.appendChild(sc); }); }
   function fmts() { var F = window.Html5QrcodeSupportedFormats || {}; return ['CODE_128', 'EAN_13', 'EAN_8', 'UPC_A', 'UPC_E', 'CODE_39', 'ITF', 'QR_CODE'].map(function (k) { return F[k]; }).filter(function (x) { return x !== undefined; }); }
   function camWhy(e) { var n = (e && (e.name || '')) + ' ' + String((e && e.message) || e || '');
     if (/NotAllowed|Permission|denied/i.test(n)) return GS && IOS ? 'On iPhone, Google’s page can’t use the live camera — use 📸 Photo below, or open Prep Scan from its own page.' : IOS ? 'Camera blocked — in Safari tap aA → Website Settings → Camera → Allow, then try again.' : 'Camera blocked — allow the camera for this page in the browser settings, then try again.';
     if (/NotFound|no camera/i.test(n)) return 'No camera found on this device.'; if (/NotReadable|in use|Could not start/i.test(n)) return 'The camera is busy in another app — close it and try again.'; return 'The camera didn’t start: ' + n.trim(); }
-  function camPanelLive(on) { var c = $('s_cam'); if (!c) return; if (on) c.innerHTML = '<div id="reader"></div><div class="aim" id="s_aim"><i></i><i></i><i></i><i></i><b></b></div><span class="tag">● LIVE</span><button class="torch" id="b_torch" onclick="ps_torch()">🔦 Light</button><button class="stop" onclick="ps_camStop()">■ Stop</button><div class="hint" id="s_hint">Starting the camera…</div>';
+  function camPanelLive(on) { var c = $('s_cam'); if (!c) return; if (on) c.innerHTML = '<div id="reader"></div><div class="aim" id="s_aim"><i></i><i></i><i></i><i></i><b></b></div><span class="tag">● LIVE</span><button class="torch" id="b_torch" onclick="ps_torch()">🔦 Light</button><button class="stop" onclick="ps_camStop()">■ Stop</button><div class="cd" id="s_cd"><b></b></div><div class="hint" id="s_hint">Starting the camera…</div>';
     else c.innerHTML = '<div class="idle" id="s_idle"><button class="go" onclick="ps_cam()">📷 Start live scan</button><small>tap to switch the camera on</small></div>'; }
   window.ps_cam = function () { if (SCREEN !== 'scan' || CAM) return; camPanelLive(true);
     camLib().then(function () { if (!$('reader')) return; try { CAM = new Html5Qrcode('reader', { formatsToSupport: fmts(), experimentalFeatures: { useBarCodeDetectorIfSupported: true }, verbose: false }); } catch (e) { camHint(camWhy(e), 1); return; }
@@ -399,6 +408,17 @@ a.amz{color:inherit;text-decoration:underline;text-decoration-color:rgba(138,180
   paint();
 })();
 </script>
+<style>/* Prep Scan v21 — box lists: count as big as the box name */
+.bx b{font-size:20px;line-height:1.1}.bx span{font-size:20px;font-weight:900;line-height:1.1;color:var(--b);white-space:nowrap}</style>
+<style>/* Prep Scan v20 — countdown circle on the camera */
+.cam .cd{position:absolute;left:50%;top:calc(50% + 18px);height:calc(100% - 64px);max-height:130px;aspect-ratio:1;min-width:0;overflow:hidden;box-sizing:border-box;transform:translate(-50%,-50%) scale(.6);border-radius:50%;z-index:2;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .15s,transform .15s;
+  background:rgba(8,12,18,.72);border:5px solid #F0A245;box-shadow:0 0 24px rgba(240,162,69,.7)}
+.cam .cd.on{opacity:1;transform:translate(-50%,-50%) scale(1)}.cam .cd.on ~ .hint{opacity:0}.cam .hint{transition:opacity .15s}.cam .cd b{font-size:clamp(30px,9vw,48px);font-weight:900;color:#F7B866;line-height:1;text-align:center}
+.cam .cd.away{border-color:#E5484D;box-shadow:0 0 24px rgba(229,72,77,.7)}.cam .cd.away b{font-size:14px;color:#ff9b9b;letter-spacing:.04em}
+.cam .cd.go{border-color:#2EC4A4;background:rgba(46,196,164,.25);box-shadow:0 0 30px rgba(46,196,164,.9)}.cam .cd.go b{font-size:19px;color:#4fe3c1;letter-spacing:.06em}
+.cam .cd.pulse b{animation:cdp .9s ease-out}@keyframes cdp{0%{transform:scale(1.5);opacity:.2}35%{transform:scale(1);opacity:1}70%{opacity:1}100%{opacity:.55}}</style>
+<style>/* Prep Scan v19 — tappable pictures */
+.it .pic.tap{cursor:pointer;position:relative;box-shadow:0 0 0 2px color-mix(in srgb,var(--L) 55%,transparent)}.it .pic.tap:after{content:"📦";position:absolute;right:-5px;bottom:-5px;font-size:13px;background:#0b0e13;border-radius:7px;padding:0 2px;line-height:1.3}</style>
 <style>/* Prep Scan v16 — ＋ new box on the last box */
 .box .ar.plus{font-size:28px;color:var(--b);background:color-mix(in srgb,var(--b) 18%,rgba(0,0,0,.35));border:2px solid color-mix(in srgb,var(--b) 70%,transparent)}</style>
 <style>/* Prep Scan v13 — no double-tap zoom · 🗑 on the box card */
