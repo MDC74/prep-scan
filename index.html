@@ -4,7 +4,8 @@
 <meta name="theme-color" content="#0b0e13"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Prep Scan"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><title>Prep Scan</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Ctext y=%22.9em%22 font-size=%2290%22%3E📦%3C/text%3E%3C/svg%3E">
-<!-- CookStars · 📱 Prep Scan v23 (24/10/2026) — countdown ticks removed · buzz-buzz vibration when ready to scan (Android)
+<!-- CookStars · 📱 Prep Scan v24 (24/10/2026) — ready sound is now a bright little “ting”
+<!-- v23 (24/10/2026) — countdown ticks removed · buzz-buzz vibration when ready to scan (Android)
 <!-- v22 (24/10/2026) — the camera stays on behind the All boxed / Wrong lane pop-ups
 <!-- v21 (24/10/2026) — box lists: the unit count is as big and bold as the box name
 <!-- v20 (24/10/2026) — countdown circle in the middle of the camera: 5 4 3 2 1 → SCAN, with a soft tick on each number
@@ -125,7 +126,7 @@ a.amz{color:inherit;text-decoration:underline;text-decoration-color:rgba(138,180
   var AC = null; function snd(k) { if (PS.sound) try { AC = AC || new (window.AudioContext || window.webkitAudioContext)(); var o = AC.createOscillator(), g = AC.createGain(); o.connect(g); g.connect(AC.destination); o.frequency.value = k === 'bad' ? 200 : 880; g.gain.setValueAtTime(0.0001, AC.currentTime); g.gain.exponentialRampToValueAtTime(0.25, AC.currentTime + 0.01); g.gain.exponentialRampToValueAtTime(0.0001, AC.currentTime + (k === 'bad' ? 0.45 : 0.12)); o.start(); o.stop(AC.currentTime + 0.5); } catch (e) {}
     if (PS.vib) try { navigator.vibrate && navigator.vibrate(k === 'bad' ? [120, 80, 120] : 50); } catch (e) {} }
   /* v11 — a clear two-note “scanned” chime, and a soft “ready” tick when the 5-second lock ends (follow the Sounds switch) */
-  function chime(k) { if (!PS.sound) return; try { AC = AC || new (window.AudioContext || window.webkitAudioContext)(); var t0 = AC.currentTime, N = k === 'tick' ? [[1250, 0, 0.035, 0.07]] : k === 'ready' ? [[523, 0, 0.07, 0.24], [784, 0.09, 0.09, 0.24]] : [[988, 0, 0.13, 0.28], [1319, 0.1, 0.2, 0.26]];
+  function chime(k) { if (!PS.sound) return; try { AC = AC || new (window.AudioContext || window.webkitAudioContext)(); var t0 = AC.currentTime, N = k === 'ready' ? [[1568, 0, 0.75, 0.22], [3136, 0, 0.4, 0.06], [4704, 0, 0.2, 0.025]] : [[988, 0, 0.13, 0.28], [1319, 0.1, 0.2, 0.26]];   /* ready = a little bell “ting” (a note plus two soft overtones, fading out) */
     N.forEach(function (n) { var o = AC.createOscillator(), g = AC.createGain(); o.type = 'sine'; o.frequency.value = n[0]; o.connect(g); g.connect(AC.destination); g.gain.setValueAtTime(0.0001, t0 + n[1]); g.gain.exponentialRampToValueAtTime(n[3], t0 + n[1] + 0.01); g.gain.exponentialRampToValueAtTime(0.0001, t0 + n[1] + n[2]); o.start(t0 + n[1]); o.stop(t0 + n[1] + n[2] + 0.05); }); } catch (e) {} }
   var IOS = /iPhone|iPad|iPod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
   /* ---------- data ---------- */
@@ -179,7 +180,7 @@ a.amz{color:inherit;text-decoration:underline;text-decoration-color:rgba(138,180
     A.innerHTML = '<div class="top"><span class="ttl">📦 Prep Scan</span><span class="sp"></span><span class="sv" id="sv" onclick="ps_retry()"></span><button class="icb" id="b_tour" onclick="ps_tour()" title="Take the tour">🎧</button><button class="icb" id="b_set" onclick="ps_settings()" title="Settings">⚙</button></div><div class="who">👥 ' + E(me) + ' · which lane are you boxing?</div><div class="lanes" id="lanes">' +
       LN.map(function (l) { var d = lane(l), nb = d.boxes.length, any = d.units || nb, pc = d.units ? Math.round(d.boxed / d.units * 100) : 0;
         return '<button class="lane' + (any ? '' : ' empty') + '" style="--c:' + LC[l] + '" onclick="ps_lane(\'' + l + '\')"><div class="t"><b>' + LI[l] + ' ' + l + '</b><span>›</span></div><div class="big">' + (any ? '<b>' + d.left + '</b>left to box' : '<b>0</b>nothing to box') + '</div><div class="g3"><div>To box<b>' + d.units + '</b></div><div>Boxed<b>' + d.boxed + '</b></div><div>Boxes<b>' + nb + '</b></div></div><div class="bar"><i style="width:' + pc + '%"></i></div></button>'; }).join('') + '</div>' +
-      '<div class="row2"><button class="btn" id="b_sup" style="--c:#2EC4A4;padding:11px" onclick="ps_sup()">🧰 Supplies</button><button class="btn" style="--c:#8b95a7;padding:11px" onclick="ps_reload()">↻ Refresh</button></div>' + '<div class="note" style="margin-top:-2px">Prep Scan v23' + (GS ? ' · inside Google' : '') + '</div>';
+      '<div class="row2"><button class="btn" id="b_sup" style="--c:#2EC4A4;padding:11px" onclick="ps_sup()">🧰 Supplies</button><button class="btn" style="--c:#8b95a7;padding:11px" onclick="ps_reload()">↻ Refresh</button></div>' + '<div class="note" style="margin-top:-2px">Prep Scan v24' + (GS ? ' · inside Google' : '') + '</div>';
     var f = $('foot'); if (f) f.remove(); paintSave(); }
   /* the scan screen: built once, then only its parts are refreshed (so the live camera keeps running) */
   function paintScan(full) { var A = $('app'), d = lane(LANE); theme(LC[LANE]); setTimeout(function () { if (typeof psFit === 'function') psFit(); }, 0); setTimeout(function () { if (typeof psFit === 'function') psFit(); }, 120);
