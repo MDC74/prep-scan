@@ -4,7 +4,8 @@
 <meta name="theme-color" content="#0b0e13"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Prep Scan"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><title>Prep Scan</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Ctext y=%22.9em%22 font-size=%2290%22%3E📦%3C/text%3E%3C/svg%3E">
-<!-- CookStars · 📱 Prep Scan v26 (24/10/2026) — the boxed-item flash stays 1 second longer (2.5 s)
+<!-- CookStars · 📱 Prep Scan v27 (24/10/2026) — lane cards split in two (left to box · open lane) · “everything boxed” confirmation with sizes & weights · fainter scan chime
+<!-- v26 (24/10/2026) — the boxed-item flash stays 1 second longer (2.5 s)
 <!-- v25 (24/10/2026) — tap “N left to box” on a lane to see what’s left
 <!-- v24 (24/10/2026) — ready sound is now a bright little “ting”
 <!-- v23 (24/10/2026) — countdown ticks removed · buzz-buzz vibration when ready to scan (Android)
@@ -128,7 +129,7 @@ a.amz{color:inherit;text-decoration:underline;text-decoration-color:rgba(138,180
   var AC = null; function snd(k) { if (PS.sound) try { AC = AC || new (window.AudioContext || window.webkitAudioContext)(); var o = AC.createOscillator(), g = AC.createGain(); o.connect(g); g.connect(AC.destination); o.frequency.value = k === 'bad' ? 200 : 880; g.gain.setValueAtTime(0.0001, AC.currentTime); g.gain.exponentialRampToValueAtTime(0.25, AC.currentTime + 0.01); g.gain.exponentialRampToValueAtTime(0.0001, AC.currentTime + (k === 'bad' ? 0.45 : 0.12)); o.start(); o.stop(AC.currentTime + 0.5); } catch (e) {}
     if (PS.vib) try { navigator.vibrate && navigator.vibrate(k === 'bad' ? [120, 80, 120] : 50); } catch (e) {} }
   /* v11 — a clear two-note “scanned” chime, and a soft “ready” tick when the 5-second lock ends (follow the Sounds switch) */
-  function chime(k) { if (!PS.sound) return; try { AC = AC || new (window.AudioContext || window.webkitAudioContext)(); var t0 = AC.currentTime, N = k === 'ready' ? [[1568, 0, 0.75, 0.22], [3136, 0, 0.4, 0.06], [4704, 0, 0.2, 0.025]] : [[988, 0, 0.13, 0.28], [1319, 0.1, 0.2, 0.26]];   /* ready = a little bell “ting” (a note plus two soft overtones, fading out) */
+  function chime(k) { if (!PS.sound) return; try { AC = AC || new (window.AudioContext || window.webkitAudioContext)(); var t0 = AC.currentTime, N = k === 'ready' ? [[1568, 0, 0.75, 0.22], [3136, 0, 0.4, 0.06], [4704, 0, 0.2, 0.025]] : [[988, 0, 0.1, 0.11], [1319, 0.08, 0.15, 0.09]];   /* ready = a little bell “ting” (a note plus two soft overtones, fading out) */
     N.forEach(function (n) { var o = AC.createOscillator(), g = AC.createGain(); o.type = 'sine'; o.frequency.value = n[0]; o.connect(g); g.connect(AC.destination); g.gain.setValueAtTime(0.0001, t0 + n[1]); g.gain.exponentialRampToValueAtTime(n[3], t0 + n[1] + 0.01); g.gain.exponentialRampToValueAtTime(0.0001, t0 + n[1] + n[2]); o.start(t0 + n[1]); o.stop(t0 + n[1] + n[2] + 0.05); }); } catch (e) {} }
   var IOS = /iPhone|iPad|iPod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
   /* ---------- data ---------- */
@@ -181,8 +182,12 @@ a.amz{color:inherit;text-decoration:underline;text-decoration-color:rgba(138,180
   function paintLanes() { theme('#8b95a7'); camOff(); var A = $('app'), me = (D && D.user && D.user.name) || (WHO === 'martin' ? 'Martin' : 'Prep');
     A.innerHTML = '<div class="top"><span class="ttl">📦 Prep Scan</span><span class="sp"></span><span class="sv" id="sv" onclick="ps_retry()"></span><button class="icb" id="b_tour" onclick="ps_tour()" title="Take the tour">🎧</button><button class="icb" id="b_set" onclick="ps_settings()" title="Settings">⚙</button></div><div class="who">👥 ' + E(me) + ' · which lane are you boxing?</div><div class="lanes" id="lanes">' +
       LN.map(function (l) { var d = lane(l), nb = d.boxes.length, any = d.units || nb, pc = d.units ? Math.round(d.boxed / d.units * 100) : 0;
-        return '<button class="lane' + (any ? '' : ' empty') + '" style="--c:' + LC[l] + '" onclick="ps_lane(\'' + l + '\')"><div class="t"><b>' + LI[l] + ' ' + l + '</b><span>›</span></div><div class="big">' + (d.left ? '<span class="leftb" onclick="event.stopPropagation();ps_left(\'' + l + '\')"><b>' + d.left + '</b>left to box ›</span>' : any ? '<b>0</b>left to box' : '<b>0</b>nothing to box') + '</div><div class="g3"><div>To box<b>' + d.units + '</b></div><div>Boxed<b>' + d.boxed + '</b></div><div>Boxes<b>' + nb + '</b></div></div><div class="bar"><i style="width:' + pc + '%"></i></div></button>'; }).join('') + '</div>' +
-      '<div class="row2"><button class="btn" id="b_sup" style="--c:#2EC4A4;padding:11px" onclick="ps_sup()">🧰 Supplies</button><button class="btn" style="--c:#8b95a7;padding:11px" onclick="ps_reload()">↻ Refresh</button></div>' + '<div class="note" style="margin-top:-2px">Prep Scan v26' + (GS ? ' · inside Google' : '') + '</div>';
+        var nb2 = d.boxes.filter(function (b) { return !boxSized(b); }).length, done = d.units > 0 && !d.left;
+        var left = done ? '<button class="lb done" onclick="ps_lane(\'' + l + '\')"><small>✅ ALL BOXED</small><big>' + d.boxed + '/' + d.units + '</big><small>' + (nb2 ? nb2 + ' box' + (nb2 === 1 ? '' : 'es') + ' need' + (nb2 === 1 ? 's' : '') + ' size ›' : 'all sizes done ✓') + '</small></button>'
+          : d.left ? '<button class="lb out" onclick="ps_left(\'' + l + '\')"><small>📋 LEFT TO BOX</small><big>' + d.left + '</big><small>see list ›</small></button>'
+          : '<div class="lb out off"><small>📋 LEFT TO BOX</small><big>0</big><small>nothing to box</small></div>';
+        return '<div class="lane' + (any ? '' : ' empty') + '" style="--c:' + LC[l] + '"><div class="lsplit">' + left + '<button class="lb solid" onclick="ps_lane(\'' + l + '\')"><small>OPEN LANE</small><big>' + LI[l] + '</big><small>' + l + ' ›</small></button></div><div class="g3"><div>To box<b>' + d.units + '</b></div><div>Boxed<b>' + d.boxed + '</b></div><div>Boxes<b>' + nb + '</b></div></div><div class="bar"><i style="width:' + pc + '%"></i></div></div>'; }).join('') + '</div>' +
+      '<div class="row2"><button class="btn" id="b_sup" style="--c:#2EC4A4;padding:11px" onclick="ps_sup()">🧰 Supplies</button><button class="btn" style="--c:#8b95a7;padding:11px" onclick="ps_reload()">↻ Refresh</button></div>' + '<div class="note" style="margin-top:-2px">Prep Scan v27' + (GS ? ' · inside Google' : '') + '</div>';
     var f = $('foot'); if (f) f.remove(); paintSave(); }
   /* the scan screen: built once, then only its parts are refreshed (so the live camera keeps running) */
   function paintScan(full) { var A = $('app'), d = lane(LANE); theme(LC[LANE]); setTimeout(function () { if (typeof psFit === 'function') psFit(); }, 0); setTimeout(function () { if (typeof psFit === 'function') psFit(); }, 120);
@@ -196,6 +201,8 @@ a.amz{color:inherit;text-decoration:underline;text-decoration-color:rgba(138,180
       f.innerHTML = '<div class="fin"><button id="b_undo" style="--c:#E5484D" onclick="ps_undo()">↶ Undo</button><button id="b_full" style="--c:#F0A245" onclick="ps_full()">📏 Size &amp; weight</button></div>'; }
     var b = curBox(d), pc = d.units ? Math.round(d.boxed / d.units * 100) : 0;
     $('s_ban').innerHTML = '<b>' + LI[LANE] + ' ' + LANE.toUpperCase() + '</b><span>' + d.boxed + ' of ' + d.units + ' boxed<br>' + d.left + ' left to box</span>'; $('s_prog').style.width = pc + '%';
+    var dn = $('s_done'), need = d.boxes.filter(function (x) { return !boxSized(x); }).length; if (!dn) { dn = document.createElement('button'); dn.id = 's_done'; dn.className = 'alldone'; dn.onclick = function () { ps_allDone(); }; $('s_prog').parentNode.after(dn); }
+    if (d.units && !d.left) { dn.style.display = ''; dn.innerHTML = '✅ No ' + E(LANE) + ' left to box · ' + (need ? need + ' box' + (need === 1 ? '' : 'es') + ' need' + (need === 1 ? 's' : '') + ' size ›' : 'all sizes done ✓'); } else dn.style.display = 'none';
     if (b) { var i = d.boxes.indexOf(b), n = boxUnits(d, b), hv = Number(b.kg) > S().heavyKg;
       $('s_box').innerHTML = '<div class="box' + (hv ? ' hv' : '') + '" id="s_card" style="--b:' + col(b) + '"><button class="ar" id="b_prev" onclick="ps_flick(-1)"' + (i > 0 ? '' : ' disabled') + ' title="Previous box">‹</button><button class="mid" onclick="ps_boxes()"><small>scanning into ▾</small><b>BOX ' + b.no + '</b><span>' + n + ' unit' + (n === 1 ? '' : 's') + (hv ? ' · ⚠ heavy' : '') + '</span><div class="dots">' + d.boxes.map(function (x) { return '<i' + (x === b ? ' class="on"' : '') + '></i>'; }).join('') + '</div></button>' + (i < d.boxes.length - 1 ? '<button class="ar" id="b_next" onclick="ps_flick(1)" title="Next box">›</button>' : '<button class="ar plus" id="b_next" onclick="ps_new()" title="Start a new box">＋</button>') + '</div>'; }
     else $('s_box').innerHTML = '<div class="nobox" id="s_card"><div style="font-size:15px;margin-bottom:10px">No box open in ' + E(LANE) + ' yet</div><button class="btn solid" style="--c:var(--L)" onclick="ps_new()">＋ Start Box 1</button></div>';
@@ -218,6 +225,13 @@ a.amz{color:inherit;text-decoration:underline;text-decoration-color:rgba(138,180
     $('ov').innerHTML = '<div class="ov"><div class="sheet lfs"><div class="lfh"><h3>' + LI[l] + ' ' + d.left + ' left to box · ' + E(l) + '</h3><div class="note" style="text-align:left;margin:-4px 0 6px">' + R.length + ' item' + (R.length === 1 ? '' : 's') + ' · most left first</div></div>' +
       (R.length ? R.map(function (r) { var im = picOf(r.fnsku, r.sku); return '<div class="lfr"><span class="pic' + (im ? '' : ' none') + '" style="' + (im ? 'background-image:url(\'' + E(im) + '\')' : '') + '"></span><span class="lfm"><b>' + E(r.item) + '</b><small>' + E(r.fnsku) + (r.boxed ? ' · ' + r.boxed + ' of ' + r.units + ' boxed' : '') + '</small></span><span class="lfq" style="--c:' + LC[l] + '">× ' + r.left + '</span></div>'; }).join('') : '<div class="empty2">Nothing left to box 🎉</div>') +
       '<div class="row2 lfb"><button class="btn" style="--c:#8b95a7" onclick="ps_ok()">Close</button><button class="btn solid" style="--c:' + LC[l] + '" onclick="ps_ok();ps_lane(\'' + l + '\')">Open ' + E(l) + ' lane</button></div></div></div>'; };
+  /* v27 — a box counts as done once it has length, width, height and weight */
+  function boxSized(b) { return ['L', 'W', 'H', 'kg'].every(function (k) { return Number(b[k]) > 0; }); }
+  window.ps_allDone = function () { var d = lane(LANE); if (!d.units || d.left) return; MODAL = 'done';
+    $('ov').innerHTML = '<div class="ov mid"><div class="err pop" style="--c:#2EC4A4"><div class="h">✅ ALL BOXED</div><b class="nm" style="font-size:20px;margin:6px 0">No ' + E(LANE) + ' left to box</b><p>Every unit is in a box. Last step — add the size &amp; weight for each box:</p>' +
+      d.boxes.map(function (b) { var ok = boxSized(b), lb = ((PB && PB.labels) || {})[b.id] || {}; return '<div class="bxr" style="--b:' + col(b) + '"><span><b>BOX ' + b.no + '</b><small>' + (ok ? b.L + ' × ' + b.W + ' × ' + b.H + ' cm · ' + b.kg + ' kg' + (lb.m ? ' · M' : '') : '⚠ needs size &amp; weight') + '</small></span>' + (ok ? '<span class="okd">✓ done</span>' : '<button class="go" onclick="ps_doneAdd(\'' + b.id + '\')">📏 Add ›</button>') + '</div>'; }).join('') +
+      '<p style="margin:10px 0 12px;font-size:12.5px;color:#aab3c2">When every box shows ✓, this lane is ready to ship from the computer.</p><button class="btn" style="--c:#fff" onclick="ps_ok()">OK</button></div></div>'; };
+  window.ps_doneAdd = function (id) { MODAL = ''; $('ov').innerHTML = ''; BOXID = id; paintScan(); ps_full(); };
   window.ps_home = function () { camOff(); SCREEN = 'lanes'; paint(); };
   window.ps_reload = function () { load(true); toast('↻ Updating…'); };
   window.ps_flick = function (dlt) { var d = lane(LANE), b = curBox(d), i = d.boxes.indexOf(b) + dlt; if (i < 0 || i >= d.boxes.length) return; BOXID = d.boxes[i].id; LASTFN = ''; paintScan(); };
@@ -237,7 +251,7 @@ a.amz{color:inherit;text-decoration:underline;text-decoration-color:rgba(138,180
       unknownScan(); return; }
     var b = curBox(d); if (!b) { ps_new(function () { scan(c); }); return; }
     if (r.left <= 0) { popItem('full', r); return; }
-    var cur = r.inBox[b.id] || 0; setQ(b, r, cur + 1); LAST = { item: r.item, fnsku: r.fnsku, left: r.left - 1 }; LASTFN = r.fnsku; chime('ok'); if (PS.vib) try { navigator.vibrate && navigator.vibrate(50); } catch (e) {} try { if (typeof psFlash === 'function') psFlash(r.item, picOf(r.fnsku, r.sku), b.no, col(b), (r.boxed + 1) + ' of ' + r.units + ' boxed'); } catch (e) {} RECENT.unshift({ item: r.item, no: b.no, col: col(b) }); RECENT = RECENT.slice(0, 6); camHint('✓ ' + r.item + ' — ＋1 into Box ' + b.no); paintScan(); }
+    var cur = r.inBox[b.id] || 0; setQ(b, r, cur + 1); LAST = { item: r.item, fnsku: r.fnsku, left: r.left - 1 }; LASTFN = r.fnsku; chime('ok'); if (PS.vib) try { navigator.vibrate && navigator.vibrate(50); } catch (e) {} try { if (typeof psFlash === 'function') psFlash(r.item, picOf(r.fnsku, r.sku), b.no, col(b), (r.boxed + 1) + ' of ' + r.units + ' boxed'); } catch (e) {} RECENT.unshift({ item: r.item, no: b.no, col: col(b) }); RECENT = RECENT.slice(0, 6); if (r.left - 1 <= 0 && !lane(LANE).left) setTimeout(function () { if (SCREEN === 'scan' && !MODAL) ps_allDone(); }, 2800); camHint('✓ ' + r.item + ' — ＋1 into Box ' + b.no); paintScan(); }
   /* v17 — a barcode Prep doesn’t recognise: no pop-up — a low buzz and “scan the label again”; the camera keeps running and is ready again in 1.5 s */
   function unknownScan() { snd('bad'); if (CAM) { camHint('↻ Didn’t recognise that — scan the FNSKU label again', 1); CAMLAST.t = Date.now() - 3500; } else toast('↻ Didn’t recognise that — scan the FNSKU label again'); }
   /* v12 — the All boxed / Wrong lane pop-ups: picture, name, FNSKU, how many and where */
@@ -417,6 +431,14 @@ a.amz{color:inherit;text-decoration:underline;text-decoration-color:rgba(138,180
   paint();
 })();
 </script>
+<style>/* Prep Scan v27 — lane cards (split) · everything boxed */
+.lane{cursor:default}.lsplit{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.lb{border-radius:14px;font-weight:900;padding:9px 11px;display:flex;flex-direction:column;align-items:flex-start;gap:2px;text-align:left;cursor:pointer;font-family:inherit}.lb small{font-size:10.5px;letter-spacing:.03em;opacity:.92}.lb big{font-size:28px;line-height:1.05}
+.lb.solid{background:var(--c);color:#06120f;border:2.5px solid var(--c)}.lb.out{border:2.5px solid var(--c);color:var(--c);background:rgba(0,0,0,.28)}.lb.off{cursor:default;opacity:.7}
+.lb.done{border:2.5px solid #2EC4A4;background:rgba(46,196,164,.16);color:#4fe3c1}
+.alldone{display:block;width:100%;border:2.5px solid #2EC4A4;background:rgba(46,196,164,.15);color:#4fe3c1;border-radius:14px;padding:9px 12px;font-weight:900;font-size:14px;text-align:left;cursor:pointer;font-family:inherit}
+.bxr{display:grid;grid-template-columns:1fr auto;align-items:center;border:2.5px solid var(--b);border-radius:14px;padding:8px 12px;margin-bottom:7px;text-align:left;background:rgba(0,0,0,.2)}.bxr b{color:var(--b);font-size:17px}.bxr small{display:block;font-size:12px;color:#c9d1dc}
+.bxr .go{background:var(--b);color:#06120f;border:0;border-radius:10px;padding:7px 11px;font-weight:900;font-size:13px;cursor:pointer}.bxr .okd{color:#4fe3c1;font-weight:900;font-size:13px}</style>
 <style>/* Prep Scan v25 — what’s left to box */
 .lane .leftb{display:inline-block;border-bottom:2px dashed color-mix(in srgb,var(--c) 70%,transparent);padding-bottom:1px;cursor:pointer}
 .lfr{display:grid;grid-template-columns:46px minmax(0,1fr) auto;gap:10px;align-items:center;border:1.5px solid var(--line);border-radius:14px;padding:7px 10px;margin-bottom:7px;background:rgba(20,26,36,.88)}
