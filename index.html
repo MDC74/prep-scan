@@ -4,7 +4,8 @@
 <meta name="theme-color" content="#0b0e13"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Prep Scan"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><title>Prep Scan</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Ctext y=%22.9em%22 font-size=%2290%22%3E📦%3C/text%3E%3C/svg%3E">
-<!-- CookStars · 📱 Prep Scan v14 (24/10/2026) — 🗑 Delete box moved to the “IN BOX” heading
+<!-- CookStars · 📱 Prep Scan v15 (24/10/2026) — refreshes every 20 s (camera on too) + ↻ button · a refused save shows why and never gets stuck · deleting a box takes its units out first (Prep server v56)
+<!-- v14 (24/10/2026) — 🗑 Delete box moved to the “IN BOX” heading
 <!-- v13 (24/10/2026) — no double-tap zoom
 <!-- v12 (24/10/2026) — new All boxed / Wrong lane pop-ups (picture, FNSKU, where the units are) · delete a box · Size & weight with M (never closes a box) · fixed-size box card · glowing arrows · 🔦 light · recent scans · 5 s between scans (camera + Bluetooth gun) — needs Prep server v55
 <!-- v11 (24/10/2026) — 5-second lock after each scan (countdown) · “scanned” chime + “ready” tick
@@ -149,7 +150,10 @@ a.amz{color:inherit;text-decoration:underline;text-decoration-color:rgba(138,180
   function q(fn, args, after) { Q.push({ fn: fn, args: args, after: after, n: 0 }); pump(); paintSave(); cacheSave(); }
   function pump() { if (QBUSY || !Q.length) return; QBUSY = true; var j = Q[0], a = typeof j.args === 'function' ? j.args() : j.args;
     run.apply(null, [j.fn].concat(a)).then(function (r) { Q.shift(); QBUSY = false; QBAD = 0; if (j.after) try { j.after(r); } catch (e) {} paintSave(); pump(); })
-      .catch(function (e) { QBUSY = false; j.n++; var m = String((e && e.message) || e); if (/SIGNED_OUT/.test(m) || j.n >= 4) { QBAD = 1; paintSave(); if (j.n >= 4) toast('⚠ Not saved yet — tap the red “not saved” to try again'); return; } setTimeout(pump, 800 * j.n); }); }
+      .catch(function (e) { QBUSY = false; j.n++; var m = String((e && e.message) || e);
+        /* v15 — Prep answered “no” (not a connection problem): show why, drop that save, re-sync so the phone matches Prep, carry on */
+        if (!/SIGNED_OUT|NO_API|Failed to fetch|NetworkError|Load failed|didn’t answer|network|timeout|offline/i.test(m)) { Q.shift(); QBAD = 0; toast('⚠ Prep said no: ' + m.slice(0, 90)); paintSave(); setTimeout(function () { load(true); }, 300); pump(); return; }
+        if (/SIGNED_OUT/.test(m) || j.n >= 4) { QBAD = 1; paintSave(); if (j.n >= 4) toast('⚠ Not saved yet (no connection) — tap the red “not saved” to try again'); return; } setTimeout(pump, 800 * j.n); }); }
   window.addEventListener('beforeunload', function (e) { if (Q.length) { e.preventDefault(); e.returnValue = 'Still saving'; } });
   function paintSave() { var s = $('sv'); if (!s) return; s.className = 'sv' + (QBAD ? ' bad' : Q.length || LOADING ? ' on' : ''); s.textContent = QBAD ? '⚠ not saved · retry' : Q.length ? '⏳ saving ' + Q.length : LOADING ? '↻ updating' : '✓ up to date'; }
   window.ps_retry = function () { if (!QBAD) return; QBAD = 0; Q.forEach(function (j) { j.n = 0; }); pump(); paintSave(); };
@@ -167,12 +171,12 @@ a.amz{color:inherit;text-decoration:underline;text-decoration-color:rgba(138,180
     A.innerHTML = '<div class="top"><span class="ttl">📦 Prep Scan</span><span class="sp"></span><span class="sv" id="sv" onclick="ps_retry()"></span><button class="icb" id="b_tour" onclick="ps_tour()" title="Take the tour">🎧</button><button class="icb" id="b_set" onclick="ps_settings()" title="Settings">⚙</button></div><div class="who">👥 ' + E(me) + ' · which lane are you boxing?</div><div class="lanes" id="lanes">' +
       LN.map(function (l) { var d = lane(l), nb = d.boxes.length, any = d.units || nb, pc = d.units ? Math.round(d.boxed / d.units * 100) : 0;
         return '<button class="lane' + (any ? '' : ' empty') + '" style="--c:' + LC[l] + '" onclick="ps_lane(\'' + l + '\')"><div class="t"><b>' + LI[l] + ' ' + l + '</b><span>›</span></div><div class="big">' + (any ? '<b>' + d.left + '</b>left to box' : '<b>0</b>nothing to box') + '</div><div class="g3"><div>To box<b>' + d.units + '</b></div><div>Boxed<b>' + d.boxed + '</b></div><div>Boxes<b>' + nb + '</b></div></div><div class="bar"><i style="width:' + pc + '%"></i></div></button>'; }).join('') + '</div>' +
-      '<div class="row2"><button class="btn" id="b_sup" style="--c:#2EC4A4;padding:11px" onclick="ps_sup()">🧰 Supplies</button><button class="btn" style="--c:#8b95a7;padding:11px" onclick="ps_reload()">↻ Refresh</button></div>' + '<div class="note" style="margin-top:-2px">Prep Scan v14' + (GS ? ' · inside Google' : '') + '</div>';
+      '<div class="row2"><button class="btn" id="b_sup" style="--c:#2EC4A4;padding:11px" onclick="ps_sup()">🧰 Supplies</button><button class="btn" style="--c:#8b95a7;padding:11px" onclick="ps_reload()">↻ Refresh</button></div>' + '<div class="note" style="margin-top:-2px">Prep Scan v15' + (GS ? ' · inside Google' : '') + '</div>';
     var f = $('foot'); if (f) f.remove(); paintSave(); }
   /* the scan screen: built once, then only its parts are refreshed (so the live camera keeps running) */
   function paintScan(full) { var A = $('app'), d = lane(LANE); theme(LC[LANE]); setTimeout(function () { if (typeof psFit === 'function') psFit(); }, 0); setTimeout(function () { if (typeof psFit === 'function') psFit(); }, 120);
     if (full || !$('s_root')) {
-      A.innerHTML = '<div id="s_root" style="display:contents"><div class="top"><button class="icb" onclick="ps_home()" title="Back to the lanes">‹</button><span class="sp"></span><span class="sv" id="sv" onclick="ps_retry()"></span><button class="icb" id="b_tour" onclick="ps_tour()">🎧</button><button class="icb" onclick="ps_settings()">⚙</button></div>' +
+      A.innerHTML = '<div id="s_root" style="display:contents"><div class="top"><button class="icb" onclick="ps_home()" title="Back to the lanes">‹</button><span class="sp"></span><span class="sv" id="sv" onclick="ps_retry()"></span><button class="icb" id="b_ref" onclick="ps_reload()" title="Refresh now">↻</button><button class="icb" id="b_tour" onclick="ps_tour()">🎧</button><button class="icb" onclick="ps_settings()">⚙</button></div>' +
         '<div class="banner" id="s_ban"></div><div class="prog"><i id="s_prog"></i></div><div id="s_box"></div>' +
         '<div class="cam" id="s_cam"><div class="idle" id="s_idle"><button class="go" onclick="ps_cam()">📷 Start live scan</button><small>tap to switch the camera on</small></div></div>' +
         '<div class="two" id="s_two"><label>📸 Photo<input type="file" accept="image/*" capture="environment" onchange="ps_photo(this)" style="display:none"></label><button onclick="ps_type()">⌨ Type code</button></div><div class="rec" id="s_rec"></div>' +
@@ -186,8 +190,9 @@ a.amz{color:inherit;text-decoration:underline;text-decoration-color:rgba(138,180
     else $('s_box').innerHTML = '<div class="nobox" id="s_card"><div style="font-size:15px;margin-bottom:10px">No box open in ' + E(LANE) + ' yet</div><button class="btn solid" style="--c:var(--L)" onclick="ps_new()">＋ Start Box 1</button></div>';
     var items = b ? PB.items.filter(function (x) { return x.box === b.id && x.qty > 0; }) : [], tot = items.reduce(function (t, x) { return t + x.qty; }, 0);
     $('s_lh').innerHTML = '<span>' + (b ? 'IN BOX ' + b.no + ' · ' + tot + ' UNIT' + (tot === 1 ? '' : 'S') : 'NO BOX YET') + '</span>' + (b ? '<button class="lhdel" title="Delete this box" onclick="ps_boxDel(\'' + b.id + '\')">🗑 Delete box</button>' : '<span>empty</span>');
-    $('s_list').innerHTML = items.length ? items.map(function (x) { var im = picOf(x.fnsku, x.sku); return '<div class="it' + (x.fnsku === LASTFN ? ' new' : '') + '"><div class="pic' + (im ? '' : ' none') + '" style="' + (im ? 'background-image:url(\'' + E(im) + '\')' : '') + '"></div><div style="min-width:0"><b>' + amzA(x.fnsku, x.sku, x.item) + '</b><small>' + E(x.fnsku) + (x.fnsku === LASTFN ? ' · just now' : '') + '</small></div><div class="q"><b>× ' + x.qty + '</b><button class="ic" style="--c:#8AB4F8" title="Change" onclick="ps_edit(\'' + J(x.fnsku) + '\')">✎</button><button class="ic" style="--c:#E5484D" title="Take out of the box" onclick="ps_del(\'' + J(x.fnsku) + '\')">🗑</button></div></div>'; }).join('')
+    var LY = $('s_list').scrollTop; $('s_list').innerHTML = items.length ? items.map(function (x) { var im = picOf(x.fnsku, x.sku); return '<div class="it' + (x.fnsku === LASTFN ? ' new' : '') + '"><div class="pic' + (im ? '' : ' none') + '" style="' + (im ? 'background-image:url(\'' + E(im) + '\')' : '') + '"></div><div style="min-width:0"><b>' + amzA(x.fnsku, x.sku, x.item) + '</b><small>' + E(x.fnsku) + (x.fnsku === LASTFN ? ' · just now' : '') + '</small></div><div class="q"><b>× ' + x.qty + '</b><button class="ic" style="--c:#8AB4F8" title="Change" onclick="ps_edit(\'' + J(x.fnsku) + '\')">✎</button><button class="ic" style="--c:#E5484D" title="Take out of the box" onclick="ps_del(\'' + J(x.fnsku) + '\')">🗑</button></div></div>'; }).join('')
       : '<div class="empty2">' + (b ? 'Nothing in Box ' + b.no + ' yet — scan an item to start' : 'Start a box, then scan') + '</div>';
+    try { $('s_list').scrollTop = LY; } catch (e) {}
     var rc = $('s_rec'); if (rc) { rc.innerHTML = RECENT.map(function (x) { return '<span style="--c:' + x.col + '">✓ ' + E(String(x.item).split(/[,–-]/)[0].slice(0, 22)) + ' · Box ' + x.no + '</span>'; }).join(''); rc.style.display = RECENT.length ? '' : 'none'; }
     var ub = $('b_undo'), fb = $('b_full'); if (ub) ub.disabled = !UNDO.length; if (fb) fb.disabled = !b;
     paintSave(); focusHid(); }
@@ -259,7 +264,7 @@ a.amz{color:inherit;text-decoration:underline;text-decoration-color:rgba(138,180
     $('ov').innerHTML = '<div class="ov mid"><div class="err pop" style="--c:#E5484D"><div class="h">🗑 DELETE BOX ' + b.no + '?</div><p>' + (n ? 'Its <b class="in">' + n + '</b> unit' + (n === 1 ? '' : 's') + ' go back to “not in a box yet”.' : 'It’s empty.') + '</p><div class="row2"><button class="btn" style="--c:#fff" onclick="ps_boxes()">No</button><button class="btn solid" style="--c:#E5484D" onclick="ps_boxDelYes(\'' + id + '\')">🗑 Yes, delete</button></div></div></div>'; };
   window.ps_boxDelYes = function (id) { var d = lane(LANE), b = d.boxes.find(function (x) { return x.id === id; }); MODAL = ''; $('ov').innerHTML = ''; if (!b) return;
     PB.items = PB.items.filter(function (x) { return x.box !== id; }); PB.boxes = PB.boxes.filter(function (x) { return x.id !== id; }); if (BOXID === id) { var rest = lane(LANE).boxes; BOXID = rest.length ? rest[rest.length - 1].id : ''; }
-    UNDO = UNDO.filter(function (u) { return !u.some(function (s) { return s.b.id === id; }); }); q('opsd_prepBoxDelete', [id]); toast('🗑 Box ' + b.no + ' deleted'); paintScan(); };
+    UNDO = UNDO.filter(function (u) { return !u.some(function (s) { return s.b.id === id; }); }); q('opsd_prepBoxDelete', [id, { force: true }]); toast('🗑 Box ' + b.no + ' deleted'); paintScan(); };
   window.ps_pickBox = function (id) { MODAL = ''; $('ov').innerHTML = ''; if (id === 'new') ps_new(); else { BOXID = id; LASTFN = ''; paintScan(); } };
   window.ps_full = function () { var d = lane(LANE), b = curBox(d); if (!b) return; camOff(); var lb = ((PB && PB.labels) || {})[b.id] || {}; CLOSE = { b: b, v: { L: b.L || '', W: b.W || '', H: b.H || '', kg: b.kg || '' }, k: 'L', m: !!lb.m }; MODAL = 'close'; paintClose(); };
   function paintClose() { var b = CLOSE.b, v = CLOSE.v, hv = Number(v.kg) > S().heavyKg, nm = { L: 'L cm', W: 'W cm', H: 'H cm', kg: 'kg' }, nx = lane(LANE).boxes.reduce(function (m, x) { return Math.max(m, x.no); }, 0) + 1;
@@ -386,7 +391,7 @@ a.amz{color:inherit;text-decoration:underline;text-decoration-color:rgba(138,180
   window.ps_say = function () { if (SAYKA) { sayStop(); var b = document.querySelector('#tcard .spk'); if (b) b.textContent = '🔈 Read aloud'; return; } if (TI >= 0) speak(TS[TI].t + '. ' + TS[TI].x, true); };
   window.addEventListener('resize', function () { tourPlace(); sizeAim(); });
   /* ---------- keep up to date (Prep on the computer changes too) ---------- */
-  setInterval(function () { if (tok && !Q.length && !MODAL && !LOADING && TI < 0 && !CAM && document.visibilityState === 'visible' && (SCREEN === 'lanes' || SCREEN === 'scan')) load(true); }, 30000);
+  setInterval(function () { if (tok && !Q.length && !QBUSY && !MODAL && !LOADING && TI < 0 && document.visibilityState === 'visible' && (SCREEN === 'lanes' || SCREEN === 'scan')) load(true); }, 20000);
   paint();
 })();
 </script>
