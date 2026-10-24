@@ -4,7 +4,8 @@
 <meta name="theme-color" content="#0b0e13"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Prep Scan"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><title>Prep Scan</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Ctext y=%22.9em%22 font-size=%2290%22%3E📦%3C/text%3E%3C/svg%3E">
-<!-- CookStars · 📱 Prep Scan v38 (24/10/2026) — no new box in a lane with nothing left to box (anywhere)
+<!-- CookStars · 📱 Prep Scan v39 (24/10/2026) — 🔑 Passwords for today (Amazon / Other tabs) · Supplies and Refresh become small icons — needs Prep server v61
+<!-- v38 (24/10/2026) — no new box in a lane with nothing left to box (anywhere)
 <!-- v37 (24/10/2026) — Size & weight: every tap counts first time (no redraw under your finger) · tapping a square starts that number fresh · Next › key
 <!-- v36 (24/10/2026) — ⚡ changes from the computer show within about 5 s (needs Prep server v57)
 <!-- v35 (24/10/2026) — boxes with no size & weight: ⚠ chip on the box card · sizes shown in Which box?
@@ -165,7 +166,7 @@ a.amz{color:inherit;text-decoration:underline;text-decoration-color:rgba(138,180
   var CK = 'cs_scan_cache', FAST = true, LOADED = 0;
   function cacheSave() { try { localStorage.setItem(CK, JSON.stringify({ D: D, PB: PB, at: Date.now(), who: tok.slice(0, 8) })); } catch (e) {} }
   function cacheLoad() { try { var c = JSON.parse(localStorage.getItem(CK) || 'null'); if (c && c.D && c.PB && c.who === tok.slice(0, 8)) { D = c.D; PB = c.PB; return true; } } catch (e) {} return false; }
-  function fetchAll() { if (FAST) return run('opsd_prepScanData').then(function (r) { return [{ user: r.user, rcpts: r.rcpts, settings: r.settings, eans: r.eans, pics: r.pics, inv: { lines: [] } }, r.box]; })
+  function fetchAll() { if (FAST) return run('opsd_prepScanData').then(function (r) { return [{ user: r.user, rcpts: r.rcpts, settings: r.settings, eans: r.eans, pics: r.pics, inv: { lines: [] }, pwToday: r.pwToday || [], mail: r.mail || {} }, r.box]; })
       .catch(function (e) { if (/isn’t allowed|is not a function|not defined|Script function not found/i.test(String((e && e.message) || e))) { FAST = false; return fetchAll(); } throw e; });
     return Promise.all([run('opsd_prepBoot'), run('opsd_prepBoxData')]); }
   function load(quiet) { if (LOADING) return; LOADING = true; if (!quiet) paint(); paintSave();
@@ -200,7 +201,7 @@ a.amz{color:inherit;text-decoration:underline;text-decoration-color:rgba(138,180
           : d.left ? '<button class="lb out" onclick="ps_left(\'' + l + '\')"><small>📋 LEFT TO BOX</small><big>' + d.left + '</big><small>see list ›</small></button>'
           : '<div class="lb out off"><small>📋 LEFT TO BOX</small><big>0</big><small>nothing to box</small></div>';
         return '<div class="lane' + (any ? '' : ' empty') + '" style="--c:' + LC[l] + '"><div class="lsplit">' + left + '<button class="lb solid lname" onclick="ps_lane(\'' + l + '\')"><span class="le">' + LI[l] + '</span><span class="ln">' + l + ' ›</span></button></div><div class="g3"><div>To box<b>' + d.units + '</b></div><div>Boxed<b>' + d.boxed + '</b></div><div>Boxes<b>' + nb + '</b></div></div><div class="bar"><i style="width:' + pc + '%"></i></div></div>'; }).join('') + '</div>' +
-      '<div class="row2"><button class="btn" id="b_sup" style="--c:#2EC4A4;padding:11px" onclick="ps_sup()">🧰 Supplies</button><button class="btn" style="--c:#8b95a7;padding:11px" onclick="ps_reload()">↻ Refresh</button></div>' + '<div class="note" style="margin-top:-2px">Prep Scan v38' + (GS ? ' · inside Google' : '') + '</div>';
+      '<div class="row3"><button class="btn pwb" id="b_pw" onclick="ps_pw()">🔑 Passwords' + ((D.pwToday || []).length ? '<i>' + D.pwToday.length + '</i>' : '') + '</button><button class="btn icb2" id="b_sup" style="--c:#2EC4A4" onclick="ps_sup()" title="Supplies">🧰</button><button class="btn icb2" style="--c:#8b95a7" onclick="ps_reload()" title="Refresh">↻</button></div>' + '<div class="note" style="margin-top:-2px">Prep Scan v39' + (GS ? ' · inside Google' : '') + '</div>';
     var f = $('foot'); if (f) f.remove(); paintSave(); setTimeout(fitLaneNames, 0); }
   /* v29 — the lane names always fit their buttons, at the same size on all three cards */
   function fitLaneNames() { var N = [].slice.call(document.querySelectorAll('#lanes .lb.lname .ln')); if (!N.length) return; N.forEach(function (n) { n.style.fontSize = ''; });
@@ -251,6 +252,16 @@ a.amz{color:inherit;text-decoration:underline;text-decoration-color:rgba(138,180
       d.boxes.map(function (b) { var ok = boxSized(b), lb = ((PB && PB.labels) || {})[b.id] || {}; return '<div class="bxr" style="--b:' + col(b) + '"><span><b>BOX ' + b.no + '</b><small>' + (ok ? b.L + ' × ' + b.W + ' × ' + b.H + ' cm · ' + b.kg + ' kg' + (lb.m ? ' · M' : '') : '⚠ needs size &amp; weight') + '</small></span>' + (ok ? '<span class="okd">✓ done</span>' : '<button class="go" onclick="ps_doneAdd(\'' + b.id + '\')">📏 Add ›</button>') + '</div>'; }).join('') +
       '<p style="margin:10px 0 12px;font-size:12.5px;color:#aab3c2">When every box shows ✓, this lane is ready to ship from the computer.</p><button class="btn" style="--c:#fff" onclick="ps_ok()">OK</button></div></div>'; };
   window.ps_doneAdd = function (id) { MODAL = ''; $('ov').innerHTML = ''; BOXID = id; paintScan(); ps_full(); };
+  /* v39 — 🔑 Passwords for today: Amazon / Other tabs · each code glowing red with the item underneath */
+  var PWTAB = 'amz';
+  window.ps_pw = function (tab) { if (tab) PWTAB = tab; MODAL = 'pw'; var L = D.pwToday || [], A = L.filter(function (x) { return x.tab === 'amz'; }), O = L.filter(function (x) { return x.tab !== 'amz'; });
+    if (!tab && !A.length && O.length) PWTAB = 'oth'; var cur = PWTAB === 'amz' ? A : O;
+    $('ov').innerHTML = '<div class="ov"><div class="sheet pws"><div class="pwh"><h3>🔑 Passwords for today</h3><div class="note" style="text-align:left;margin:2px 0 10px">updates by itself from the emails</div>' +
+      '<div class="pwtabs"><button class="' + (PWTAB === 'amz' ? 'on' : '') + '" onclick="ps_pw(\'amz\')">Amazon<i>' + A.length + '</i></button><button class="' + (PWTAB === 'oth' ? 'on' : '') + '" onclick="ps_pw(\'oth\')">Other<i>' + O.length + '</i></button></div></div>' +
+      '<div class="pwl">' + (cur.length ? cur.map(function (x) { var im = x.image || picOf(x.fnsku, x.sku), par = (x.parcels || []).reduce(function (t, q) { return t + q; }, 0);
+        return '<div class="pwc"><div class="pwcode">' + E(String(x.code).replace(/^(\d{3})(\d{3})$/, '$1 $2')) + '</div><div class="pwk"><span>' + E(String(x.kind).toUpperCase()) + '</span></div><div class="pwi"><span class="pic' + (im ? '' : ' none') + '" style="' + (im ? 'background-image:url(\'' + E(im) + '\')' : '') + '"></span><span class="pwm"><b>' + E(x.product) + '</b><small>' + E(x.retailer) + (x.order ? ' · ' + E(x.order) : '') + '</small><small>📬 arriving today' + (x.win ? ' ' + E(x.win) : '') + ' · ' + (par && par < x.units ? par + ' of ' + x.units + ' units' : x.units + ' unit' + (x.units === 1 ? '' : 's')) + '</small></span></div></div>'; }).join('')
+        : '<div class="empty2">No ' + (PWTAB === 'amz' ? 'Amazon passwords' : 'other passwords or PINs') + ' for today</div>') + '</div>' +
+      '<div class="pwf"><button class="btn" style="--c:#8b95a7;padding:11px" onclick="ps_ok()">Close</button></div></div></div>'; };
   window.ps_home = function () { camOff(); SCREEN = 'lanes'; paint(); };
   window.ps_reload = function () { load(true); toast('↻ Updating…'); };
   window.ps_flick = function (dlt) { var d = lane(LANE), b = curBox(d), i = d.boxes.indexOf(b) + dlt; if (i < 0 || i >= d.boxes.length) return; BOXID = d.boxes[i].id; LASTFN = ''; paintScan(); };
@@ -418,7 +429,8 @@ a.amz{color:inherit;text-decoration:underline;text-decoration-color:rgba(138,180
     { s: 'lanes', q: '#lanes .lane', t: 'The three lanes', x: 'Everything is boxed in three separate lanes: Standard in green, Dangerous goods in orange, and Oversize in blue. Each lane has its own card, with how many there are to box, how many are boxed, and how many boxes are open. The bar along the bottom fills up as you go.' },
     { s: 'lanes', q: '#lanes .lane .lb', t: 'What’s left to box', x: 'The button on the left shows how many units are still left to box in that lane. Tap it to see a list of exactly what’s left, with a picture of each item and how many are still to go. When every unit in a lane is boxed, this button turns green and says all boxed.' },
     { s: 'lanes', q: '#lanes .lane .lb.solid', t: 'Open a lane', x: 'The button on the right opens the lane, so you can start boxing it. Tap it now, or any time you’re ready to box.' },
-    { s: 'lanes', q: '#b_sup', t: 'Running low?', x: 'If you’re running out of boxes, tape, polybags or labels, tap Supplies. Pick what you need and it goes straight to Martin.' },
+    { s: 'lanes', q: '#b_pw', t: 'Passwords for today', x: 'The red Passwords button shows today’s delivery passwords. Amazon passwords are on the Amazon tab, and DPD and other couriers’ PINs are on the Other tab. Each code glows red, with the item it belongs to underneath. It fills in by itself from the emails.' },
+    { s: 'lanes', q: '#b_sup', t: 'Running low?', x: 'If you’re running out of boxes, tape, polybags or labels, tap the toolbox. Pick what you need and it goes straight to Martin. The arrow next to it refreshes everything.' },
     { s: 'lanes', q: '#b_set', t: 'Make it yours', x: 'The cog opens the settings for this phone. You can make the writing and buttons bigger, turn the sounds on or off, and choose this voice. There’s also a tip to stop the phone asking for the camera every time.' },
     { s: 'scan', q: '#s_ban', t: 'Which lane you’re in', x: 'Inside a lane, the whole screen turns that lane’s colour, and this banner tells you which lane you’re in, so you never box into the wrong one. It also shows how many are boxed and how many are left.' },
     { s: 'scan', q: '#s_card', t: 'Your box', x: 'This card is the box you’re filling right now, and everything you scan goes into it. Use the arrows to flick between your boxes. On the last box, the right arrow becomes a plus sign: tap it to start a new box. Tap the middle of the card to see all your boxes at once.' },
@@ -478,6 +490,18 @@ a.amz{color:inherit;text-decoration:underline;text-decoration-color:rgba(138,180
 <style>/* Prep Scan v35 — size & weight reminders */
 .box .mid .noszw{margin-top:3px;line-height:1}.box .mid .nosz{font-style:normal;display:inline-block;background:rgba(247,201,72,.18);border:1.5px solid #F7C948;color:#F7C948;border-radius:8px;padding:1px 7px;font-size:calc(11px * min(1, 1.15 / var(--zoom,1)) * min(1, 1.3 / var(--zoom,1)));font-weight:900;cursor:pointer;white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:ellipsis}.box .mid:has(.noszw) small{display:none}
 .bxw{grid-template-columns:minmax(0,1fr) 52px}.bxw .bx{min-width:0;width:100%;gap:10px}.bx b{white-space:nowrap}.bx .bxl{flex:1 1 auto;min-width:0;text-align:left;line-height:1.15}.bx .bxl small{display:block;font-size:12px;font-weight:800;margin-top:3px;white-space:normal;overflow-wrap:anywhere}.bx .bxl small.ok{color:#4fe3c1}.bx .bxl small.no{color:#F7C948}.bx .bxs{flex:0 0 auto;text-align:right}</style>
+<style>/* Prep Scan v39 — 🔑 Passwords */
+.row3{display:grid;grid-template-columns:1fr 54px 54px;gap:8px}.row3 .btn{padding:11px 6px}.row3 .icb2{font-size:20px;padding:9px 0}
+.btn.pwb{--c:#E5484D;background:#E5484D;color:#fff;border-color:#E5484D;box-shadow:0 0 16px rgba(229,72,77,.5)}.btn.pwb i{font-style:normal;display:inline-block;margin-left:8px;background:#fff;color:#E5484D;border-radius:99px;padding:0 8px;font-size:13px}
+.sheet.pws{display:flex;flex-direction:column;padding-top:0;padding-bottom:0}.pws .pwh{position:sticky;top:0;background:var(--panel);padding:16px 0 4px;z-index:2}.pws h3{margin:0}
+.pwtabs{display:grid;grid-template-columns:1fr 1fr;gap:6px;background:#0b0e13;border:1.5px solid #232a36;border-radius:14px;padding:4px;margin-bottom:10px}.pwtabs button{border:0;background:transparent;border-radius:10px;padding:9px 6px;font-weight:900;font-size:14px;color:#8b95a7;cursor:pointer}
+.pwtabs button i{font-style:normal;display:inline-block;margin-left:6px;border-radius:99px;padding:0 7px;font-size:12px;background:#232a36;color:#c9d1dc}.pwtabs button.on{background:#E5484D;color:#fff;box-shadow:0 0 14px rgba(229,72,77,.5)}.pwtabs button.on i{background:#fff;color:#E5484D}
+.pwl{display:flex;flex-direction:column;gap:10px}.pwc{border:2px solid rgba(229,72,77,.55);border-radius:16px;background:linear-gradient(180deg,rgba(229,72,77,.10),rgba(20,26,36,.95) 60%);padding:12px 12px 10px}
+@keyframes pwg{0%,100%{text-shadow:0 0 10px rgba(255,80,85,.75),0 0 2px #ff9b9e}50%{text-shadow:0 0 22px rgba(255,80,85,1),0 0 4px #ffc2c4}}
+.pwcode{font-family:ui-monospace,Consolas,monospace;font-size:38px;font-weight:900;letter-spacing:.14em;color:#ff5c61;text-align:center;line-height:1.1;animation:pwg 1.6s ease-in-out infinite}
+.pwk{display:flex;justify-content:center;margin:4px 0 10px;font-size:11px;font-weight:900;letter-spacing:.06em}.pwk span{border:1.5px solid rgba(255,138,141,.6);color:#ffb3b5;border-radius:99px;padding:1px 9px}
+.pwi{display:grid;grid-template-columns:46px minmax(0,1fr);gap:10px;align-items:center;border-top:1px solid #232a36;padding-top:9px}.pwi .pic{width:46px;height:46px}.pwm{min-width:0}.pwm b{display:block;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.pwm small{display:block;font-size:11.5px;color:#8b95a7;margin-top:1px}
+.pws .pwf{position:sticky;bottom:0;background:var(--panel);padding:10px 0 calc(env(safe-area-inset-bottom,0px) + 16px);margin-top:8px}</style>
 <style>/* Prep Scan v32 — every window fits the screen at any text size */
 .sheet{max-height:calc(90dvh / var(--zoom,1))!important}.err{max-height:calc(88dvh / var(--zoom,1))!important}.ov.mid{padding:calc(16px / var(--zoom,1))}</style>
 <style>/* Prep Scan v30 — big picture */
