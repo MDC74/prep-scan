@@ -4,7 +4,10 @@
 <meta name="theme-color" content="#0b0e13"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Prep Scan"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><title>Prep Scan</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Ctext y=%22.9em%22 font-size=%2290%22%3E📦%3C/text%3E%3C/svg%3E">
-<!-- CookStars · 📱 Prep Scan v35 (24/10/2026) — boxes with no size & weight: ⚠ chip on the box card · sizes shown in Which box?
+<!-- CookStars · 📱 Prep Scan v38 (24/10/2026) — no new box in a lane with nothing left to box (anywhere)
+<!-- v37 (24/10/2026) — Size & weight: every tap counts first time (no redraw under your finger) · tapping a square starts that number fresh · Next › key
+<!-- v36 (24/10/2026) — ⚡ changes from the computer show within about 5 s (needs Prep server v57)
+<!-- v35 (24/10/2026) — boxes with no size & weight: ⚠ chip on the box card · sizes shown in Which box?
 <!-- v34 (24/10/2026) — the tour voice says “live” as in live camera (lyve), not “liv”
 <!-- v33 (24/10/2026) — vibration removed (switch, tour line and buzzes)
 <!-- v32 (24/10/2026) — windows always fit the screen at any text size (Huge cut the settings off) · ?size=normal resets the text size
@@ -197,7 +200,7 @@ a.amz{color:inherit;text-decoration:underline;text-decoration-color:rgba(138,180
           : d.left ? '<button class="lb out" onclick="ps_left(\'' + l + '\')"><small>📋 LEFT TO BOX</small><big>' + d.left + '</big><small>see list ›</small></button>'
           : '<div class="lb out off"><small>📋 LEFT TO BOX</small><big>0</big><small>nothing to box</small></div>';
         return '<div class="lane' + (any ? '' : ' empty') + '" style="--c:' + LC[l] + '"><div class="lsplit">' + left + '<button class="lb solid lname" onclick="ps_lane(\'' + l + '\')"><span class="le">' + LI[l] + '</span><span class="ln">' + l + ' ›</span></button></div><div class="g3"><div>To box<b>' + d.units + '</b></div><div>Boxed<b>' + d.boxed + '</b></div><div>Boxes<b>' + nb + '</b></div></div><div class="bar"><i style="width:' + pc + '%"></i></div></div>'; }).join('') + '</div>' +
-      '<div class="row2"><button class="btn" id="b_sup" style="--c:#2EC4A4;padding:11px" onclick="ps_sup()">🧰 Supplies</button><button class="btn" style="--c:#8b95a7;padding:11px" onclick="ps_reload()">↻ Refresh</button></div>' + '<div class="note" style="margin-top:-2px">Prep Scan v35' + (GS ? ' · inside Google' : '') + '</div>';
+      '<div class="row2"><button class="btn" id="b_sup" style="--c:#2EC4A4;padding:11px" onclick="ps_sup()">🧰 Supplies</button><button class="btn" style="--c:#8b95a7;padding:11px" onclick="ps_reload()">↻ Refresh</button></div>' + '<div class="note" style="margin-top:-2px">Prep Scan v38' + (GS ? ' · inside Google' : '') + '</div>';
     var f = $('foot'); if (f) f.remove(); paintSave(); setTimeout(fitLaneNames, 0); }
   /* v29 — the lane names always fit their buttons, at the same size on all three cards */
   function fitLaneNames() { var N = [].slice.call(document.querySelectorAll('#lanes .lb.lname .ln')); if (!N.length) return; N.forEach(function (n) { n.style.fontSize = ''; });
@@ -220,7 +223,7 @@ a.amz{color:inherit;text-decoration:underline;text-decoration-color:rgba(138,180
     if (d.units && !d.left) { dn.style.display = ''; dn.innerHTML = '✅ No ' + E(LANE) + ' left to box · ' + (need ? need + ' box' + (need === 1 ? '' : 'es') + ' need' + (need === 1 ? 's' : '') + ' size ›' : 'all sizes done ✓'); } else dn.style.display = 'none';
     if (b) { var i = d.boxes.indexOf(b), n = boxUnits(d, b), hv = Number(b.kg) > S().heavyKg;
       $('s_box').innerHTML = '<div class="box' + (hv ? ' hv' : '') + '" id="s_card" style="--b:' + col(b) + '"><button class="ar" id="b_prev" onclick="ps_flick(-1)"' + (i > 0 ? '' : ' disabled') + ' title="Previous box">‹</button><button class="mid" onclick="ps_boxes()"><small>scanning into ▾</small><b>BOX ' + b.no + '</b><span>' + n + ' unit' + (n === 1 ? '' : 's') + (hv ? ' · ⚠ heavy' : '') + '</span>' + (boxSized(b) ? '<div class="dots">' + d.boxes.map(function (x) { return '<i' + (x === b ? ' class="on"' : '') + '></i>'; }).join('') + '</div>' : '<div class="noszw"><i class="nosz" onclick="event.stopPropagation();ps_full()" title="Add size &amp; weight">⚠ no size &amp; weight</i></div>') + '</button>' + (i < d.boxes.length - 1 ? '<button class="ar" id="b_next" onclick="ps_flick(1)" title="Next box">›</button>' : d.left > 0 ? '<button class="ar plus" id="b_next" onclick="ps_new()" title="Start a new box">＋</button>' : '<button class="ar" id="b_next" disabled title="Nothing left to box">›</button>') + '</div>'; }
-    else $('s_box').innerHTML = '<div class="nobox" id="s_card"><div style="font-size:15px;margin-bottom:10px">No box open in ' + E(LANE) + ' yet</div><button class="btn solid" style="--c:var(--L)" onclick="ps_new()">＋ Start Box 1</button></div>';
+    else $('s_box').innerHTML = d.left ? '<div class="nobox" id="s_card"><div style="font-size:15px;margin-bottom:10px">No box open in ' + E(LANE) + ' yet</div><button class="btn solid" style="--c:var(--L)" onclick="ps_new()">＋ Start Box 1</button></div>' : '<div class="nobox" id="s_card"><div style="font-size:16px;font-weight:900">Nothing to box in ' + E(LANE) + '</div><div style="font-size:13px;opacity:.8;margin-top:4px">New boxes appear here once items are labelled for this lane</div></div>';
     setTimeout(function () { var z = document.querySelector('#s_card .nosz'); if (z && z.scrollWidth > z.clientWidth + 1) z.textContent = '⚠ no size'; }, 0);   /* v35 — very small space: shorter wording */
     var items = b ? PB.items.filter(function (x) { return x.box === b.id && x.qty > 0; }) : [], tot = items.reduce(function (t, x) { return t + x.qty; }, 0);
     $('s_lh').innerHTML = '<span>' + (b ? 'IN BOX ' + b.no + ' · ' + tot + ' UNIT' + (tot === 1 ? '' : 'S') : 'NO BOX YET') + '</span>' + (b ? '<button class="lhdel" title="Delete this box" onclick="ps_boxDel(\'' + b.id + '\')">🗑 Delete box</button>' : '<span>empty</span>');
@@ -305,7 +308,7 @@ a.amz{color:inherit;text-decoration:underline;text-decoration-color:rgba(138,180
     $('ov').innerHTML = '<div class="ov mid"><div class="err" style="--c:#E5484D"><div class="h">🗑 TAKE OUT OF BOX ' + b.no + '?</div><b style="font-size:20px">' + amzA(r.fnsku, r.sku, r.item) + '</b><p>All <b style="font-size:inherit;display:inline;margin:0">' + cur + '</b> go back to “not in a box yet”.</p><div class="row2"><button class="btn" style="--c:#fff" onclick="ps_ok()">No</button><button class="btn solid" style="--c:#E5484D" onclick="ps_delYes(\'' + J(fn) + '\')">🗑 Yes, take out</button></div></div></div>'; };
   window.ps_delYes = function (fn) { var d = lane(LANE), b = curBox(d), r = d.rows.find(function (x) { return x.fnsku === fn; }); MODAL = ''; $('ov').innerHTML = ''; if (!b || !r) return; setQ(b, r, 0); LASTFN = ''; toast('🗑 Taken out of Box ' + b.no); paintScan(); };
   /* ---------- boxes ---------- */
-  window.ps_new = function (then) { var d = lane(LANE), no = d.boxes.reduce(function (m, b) { return Math.max(m, Number(b.no) || 0); }, 0) + 1, b = { id: 'tmp-' + Date.now(), lane: LANE, no: no, status: 'open', L: '', W: '', H: '', kg: '' };
+  window.ps_new = function (then) { if (!lane(LANE).left) { snd('bad'); toast('Nothing to box in ' + LANE + ' — no new box needed'); return; } var d = lane(LANE), no = d.boxes.reduce(function (m, b) { return Math.max(m, Number(b.no) || 0); }, 0) + 1, b = { id: 'tmp-' + Date.now(), lane: LANE, no: no, status: 'open', L: '', W: '', H: '', kg: '' };
     PB.boxes.push(b); BOXID = b.id; q('opsd_prepBoxNew', [LANE], function (r) { var old = b.id; b.id = r.id; b.no = r.no; PB.items.forEach(function (x) { if (x.box === old) x.box = r.id; }); if (BOXID === old) BOXID = r.id; if (SCREEN === 'scan') paintScan(); });
     if (typeof then === 'function') then(); else { toast('📦 Box ' + no + ' started'); paintScan(); } };
   window.ps_boxes = function () { var d = lane(LANE); MODAL = 'boxes'; $('ov').innerHTML = '<div class="ov"><div class="sheet"><h3>Which box?</h3>' + d.boxes.map(function (b) { var n = boxUnits(d, b); return '<div class="bxw"><button class="bx' + (b.id === BOXID ? ' on' : '') + '" style="--b:' + col(b) + '" onclick="ps_pickBox(\'' + b.id + '\')"><span class="bxl"><b>BOX ' + b.no + '</b>' + (boxSized(b) ? '<small class="ok">' + b.L + '×' + b.W + '×' + b.H + ' cm · ' + b.kg + ' kg' + ((((PB && PB.labels) || {})[b.id] || {}).m ? ' · M' : '') + ' ✓</small>' : '<small class="no">⚠ needs size &amp; weight</small>') + '</span><span class="bxs">' + n + ' unit' + (n === 1 ? '' : 's') + '</span></button><button class="bxdel" title="Delete this box" onclick="ps_boxDel(\'' + b.id + '\')">🗑</button></div>'; }).join('') + (d.left > 0 ? '<button class="btn" style="--c:var(--L);margin-top:6px" onclick="ps_pickBox(\'new\')">＋ New box</button>' : '<div class="note" style="margin:6px 0">Everything in this lane is boxed — no new box needed</div>') + '<button class="btn" style="--c:#8b95a7;margin-top:8px;padding:10px" onclick="ps_ok()">Cancel</button></div></div>'; };
@@ -315,15 +318,30 @@ a.amz{color:inherit;text-decoration:underline;text-decoration-color:rgba(138,180
     PB.items = PB.items.filter(function (x) { return x.box !== id; }); PB.boxes = PB.boxes.filter(function (x) { return x.id !== id; }); if (BOXID === id) { var rest = lane(LANE).boxes; BOXID = rest.length ? rest[rest.length - 1].id : ''; }
     UNDO = UNDO.filter(function (u) { return !u.some(function (s) { return s.b.id === id; }); }); q('opsd_prepBoxDelete', [id, { force: true }]); toast('🗑 Box ' + b.no + ' deleted'); paintScan(); };
   window.ps_pickBox = function (id) { MODAL = ''; $('ov').innerHTML = ''; if (id === 'new') ps_new(); else { BOXID = id; LASTFN = ''; paintScan(); } };
-  window.ps_full = function () { var d = lane(LANE), b = curBox(d); if (!b) return; camOff(); var lb = ((PB && PB.labels) || {})[b.id] || {}; CLOSE = { b: b, v: { L: b.L || '', W: b.W || '', H: b.H || '', kg: b.kg || '' }, k: 'L', m: !!lb.m }; MODAL = 'close'; paintClose(); };
-  function paintClose() { var b = CLOSE.b, v = CLOSE.v, hv = Number(v.kg) > S().heavyKg, nm = { L: 'L cm', W: 'W cm', H: 'H cm', kg: 'kg' }, nx = lane(LANE).boxes.reduce(function (m, x) { return Math.max(m, x.no); }, 0) + 1;
-    $('ov').innerHTML = '<div class="ov"><div class="sheet"><h3>📏 Box ' + b.no + ' — size &amp; weight</h3><div class="note" style="text-align:left;margin-bottom:10px">Tap a square, then type on the pad · M = Munbyn label</div><div class="fld fld5">' + ['L', 'W', 'H', 'kg'].map(function (k) { return '<button class="' + (CLOSE.k === k ? 'on' : '') + (k === 'kg' && hv ? ' hv' : '') + '" onclick="ps_fk(\'' + k + '\')"><small>' + nm[k] + '</small><b>' + (v[k] === '' ? '–' : E(v[k])) + '</b></button>'; }).join('') + '<button class="mb' + (CLOSE.m ? ' on' : '') + '" onclick="ps_fm()" title="Munbyn label"><b>M</b><small>Munbyn</small></button></div>' +
-      (hv ? '<div class="err" style="--c:#E5484D;padding:12px;margin-top:10px;border-width:3px"><b style="font-size:17px;margin:0">⚠ Over ' + S().heavyKg + ' kg</b><p style="margin:4px 0 0;font-size:15px;font-weight:800">This box must be labelled HEAVY.</p></div>' : '') +
-      '<div class="pad" style="margin-top:12px">' + ['1', '2', '3', '4', '5', '6', '7', '8', '9', '.', '0', '⌫'].map(function (k) { return '<button onclick="ps_pk(\'' + k + '\')">' + k + '</button>'; }).join('') + '</div>' +
-      '<button class="btn solid" style="--c:var(--L);margin-top:12px" onclick="ps_closeBox(0)">✓ Save size &amp; weight</button><button class="btn" style="--c:#8b95a7;font-size:15px;padding:11px;margin-top:8px" onclick="ps_ok()">Cancel</button><div class="note" style="margin-top:8px">The box stays open — you can keep scanning into it any time.</div></div></div>'; }
+  window.ps_full = function () { var d = lane(LANE), b = curBox(d); if (!b) return; camOff(); var lb = ((PB && PB.labels) || {})[b.id] || {}; CLOSE = { b: b, v: { L: b.L || '', W: b.W || '', H: b.H || '', kg: b.kg || '' }, k: 'L', m: !!lb.m, fresh: true }; MODAL = 'close'; var ow = $('szw'); if (ow) ow.removeAttribute('data-box'); paintClose(); };
+  /* v37 — the Size & weight window is drawn once; taps only change the numbers in place (no tap lost while it redraws) */
+  var SZK = ['L', 'W', 'H', 'kg'], SZN = { L: 'L cm', W: 'W cm', H: 'H cm', kg: 'kg' };
+  function paintClose() { var b = CLOSE.b, w = $('szw');
+    if (!w || w.getAttribute('data-box') !== String(b.id)) {
+      $('ov').innerHTML = '<div class="ov"><div class="sheet" id="szw" data-box="' + E(b.id) + '"><h3>📏 Box ' + b.no + ' — size &amp; weight</h3><div class="note" style="text-align:left;margin-bottom:10px">Tap a square, then type on the pad · M = Munbyn label</div><div class="fld fld5">' +
+        SZK.map(function (k) { return '<button id="szf_' + k + '" onclick="ps_fk(\'' + k + '\')"><small>' + SZN[k] + '</small><b></b></button>'; }).join('') + '<button class="mb" id="szm" onclick="ps_fm()" title="Munbyn label"><b>M</b><small>Munbyn</small></button></div>' +
+        '<div id="szhv"></div>' +
+        '<div class="pad" style="margin-top:12px">' + ['1', '2', '3', '4', '5', '6', '7', '8', '9', '.', '0', '⌫'].map(function (k) { return '<button onclick="ps_pk(\'' + k + '\')">' + k + '</button>'; }).join('') + '</div>' +
+        '<button class="btn" id="sznext" style="--c:#8AB4F8;margin-top:8px;padding:11px" onclick="ps_fnext()">Next ›</button>' +
+        '<button class="btn solid" style="--c:var(--L);margin-top:10px" onclick="ps_closeBox(0)">✓ Save size &amp; weight</button><button class="btn" style="--c:#8b95a7;font-size:15px;padding:11px;margin-top:8px" onclick="ps_ok()">Cancel</button><div class="note" style="margin-top:8px">The box stays open — you can keep scanning into it any time.</div></div></div>'; }
+    var v = CLOSE.v, hv = Number(v.kg) > S().heavyKg;
+    SZK.forEach(function (k) { var f = $('szf_' + k); if (!f) return; f.className = (CLOSE.k === k ? 'on' : '') + (k === 'kg' && hv ? ' hv' : ''); f.querySelector('b').textContent = v[k] === '' || v[k] === undefined ? '–' : String(v[k]); });
+    var m = $('szm'); if (m) m.className = 'mb' + (CLOSE.m ? ' on' : '');
+    var h = $('szhv'); if (h) h.innerHTML = hv ? '<div class="err" style="--c:#E5484D;padding:12px;margin-top:10px;border-width:3px"><b style="font-size:17px;margin:0">⚠ Over ' + S().heavyKg + ' kg</b><p style="margin:4px 0 0;font-size:15px;font-weight:800">This box must be labelled HEAVY.</p></div>' : '';
+    var nx = $('sznext'); if (nx) nx.textContent = CLOSE.k === 'kg' ? 'Next ›  (last one)' : 'Next ›  ' + SZN[SZK[SZK.indexOf(CLOSE.k) + 1]]; }
   window.ps_fm = function () { CLOSE.m = !CLOSE.m; paintClose(); };
-  window.ps_fk = function (k) { CLOSE.k = k; paintClose(); };
-  window.ps_pk = function (c) { var k = CLOSE.k, s = String(CLOSE.v[k] === undefined ? '' : CLOSE.v[k]); if (c === '⌫') s = s.slice(0, -1); else if (c === '.') { if (k === 'kg' && s.indexOf('.') === -1) s = (s || '0') + '.'; } else if (s.replace('.', '').length < 4) s = s + c; CLOSE.v[k] = s; paintClose(); };
+  /* tapping a square starts that number fresh: the first digit replaces what was there */
+  window.ps_fk = function (k) { CLOSE.k = k; CLOSE.fresh = true; paintClose(); };
+  window.ps_fnext = function () { var i = SZK.indexOf(CLOSE.k); if (i < SZK.length - 1) { CLOSE.k = SZK[i + 1]; CLOSE.fresh = true; } paintClose(); };
+  window.ps_pk = function (c) { var k = CLOSE.k, s = String(CLOSE.v[k] === undefined ? '' : CLOSE.v[k]);
+    if (c === '⌫') { s = s.slice(0, -1); CLOSE.fresh = false; }
+    else { if (CLOSE.fresh) { s = ''; CLOSE.fresh = false; } if (c === '.') { if (k === 'kg' && s.indexOf('.') === -1) s = (s || '0') + '.'; } else if (s.replace('.', '').length < 4) s = s + c; }
+    CLOSE.v[k] = s; paintClose(); };
   window.ps_closeBox = function (andNew) { var v = CLOSE.v, b = CLOSE.b, miss = ['L', 'W', 'H', 'kg'].filter(function (k) { return !(Number(v[k]) > 0); });
     if (miss.length && andNew) { snd('bad'); toast('📏 Fill in ' + miss.map(function (k) { return { L: 'length', W: 'width', H: 'height', kg: 'weight' }[k]; }).join(', ') + ' first'); CLOSE.k = miss[0]; paintClose(); return; }
     var p = {}; ['L', 'W', 'H'].forEach(function (k) { if (v[k] !== '') { p[k] = Number(v[k]); b[k] = Number(v[k]); } }); if (v.kg !== '') { p.Kg = Number(v.kg); b.kg = Number(v.kg); }
@@ -449,6 +467,10 @@ a.amz{color:inherit;text-decoration:underline;text-decoration-color:rgba(138,180
   window.ps_say = function () { if (SAYKA) { sayStop(); var b = document.querySelector('#tcard .spk'); if (b) b.textContent = '🔈 Read aloud'; return; } if (TI >= 0) speak(TS[TI].t + '. ' + TS[TI].x, true); };
   window.addEventListener('resize', function () { tourPlace(); sizeAim(); });
   /* ---------- keep up to date (Prep on the computer changes too) ---------- */
+  /* v36 — a tiny “changed?” check every 5 s; reload only when something changed (needs Prep server v57; older servers just skip it) */
+  var VER36 = null;
+  setInterval(function () { if (!tok || Q.length || QBUSY || LOADING || MODAL || TI >= 0 || document.visibilityState !== 'visible' || (SCREEN !== 'lanes' && SCREEN !== 'scan')) return;
+    run('opsd_prepBoxVer').then(function (r) { var v = (r && r.v) || ''; if (VER36 !== null && v !== VER36) load(true); VER36 = v; }).catch(function () {}); }, 5000);
   setInterval(function () { if (tok && !Q.length && !QBUSY && !MODAL && !LOADING && TI < 0 && document.visibilityState === 'visible' && (SCREEN === 'lanes' || SCREEN === 'scan')) load(true); }, 20000);
   paint();
 })();
