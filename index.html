@@ -4,7 +4,9 @@
 <meta name="theme-color" content="#0b0e13"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Prep Scan"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><title>Prep Scan</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Ctext y=%22.9em%22 font-size=%2290%22%3E📦%3C/text%3E%3C/svg%3E">
-<!-- CookStars · 📱 Prep Scan v16 (24/10/2026) — ＋ on the last box starts a new box · recent scans strip removed
+<!-- CookStars · 📱 Prep Scan v18 (24/10/2026) — clearer “ready” sound (bip-bip ↑) when the scanner can scan again
+<!-- v17 (24/10/2026) — a barcode Prep doesn’t recognise: no pop-up, just “scan the label again” (camera keeps running)
+<!-- v16 (24/10/2026) — ＋ on the last box starts a new box · recent scans strip removed
 <!-- v15 (24/10/2026) — refreshes every 20 s (camera on too) + ↻ button · a refused save shows why and never gets stuck · deleting a box takes its units out first (Prep server v56)
 <!-- v14 (24/10/2026) — 🗑 Delete box moved to the “IN BOX” heading
 <!-- v13 (24/10/2026) — no double-tap zoom
@@ -118,7 +120,7 @@ a.amz{color:inherit;text-decoration:underline;text-decoration-color:rgba(138,180
   var AC = null; function snd(k) { if (PS.sound) try { AC = AC || new (window.AudioContext || window.webkitAudioContext)(); var o = AC.createOscillator(), g = AC.createGain(); o.connect(g); g.connect(AC.destination); o.frequency.value = k === 'bad' ? 200 : 880; g.gain.setValueAtTime(0.0001, AC.currentTime); g.gain.exponentialRampToValueAtTime(0.25, AC.currentTime + 0.01); g.gain.exponentialRampToValueAtTime(0.0001, AC.currentTime + (k === 'bad' ? 0.45 : 0.12)); o.start(); o.stop(AC.currentTime + 0.5); } catch (e) {}
     if (PS.vib) try { navigator.vibrate && navigator.vibrate(k === 'bad' ? [120, 80, 120] : 50); } catch (e) {} }
   /* v11 — a clear two-note “scanned” chime, and a soft “ready” tick when the 5-second lock ends (follow the Sounds switch) */
-  function chime(k) { if (!PS.sound) return; try { AC = AC || new (window.AudioContext || window.webkitAudioContext)(); var t0 = AC.currentTime, N = k === 'ready' ? [[660, 0, 0.09, 0.10]] : [[988, 0, 0.13, 0.28], [1319, 0.1, 0.2, 0.26]];
+  function chime(k) { if (!PS.sound) return; try { AC = AC || new (window.AudioContext || window.webkitAudioContext)(); var t0 = AC.currentTime, N = k === 'ready' ? [[523, 0, 0.07, 0.24], [784, 0.09, 0.09, 0.24]] : [[988, 0, 0.13, 0.28], [1319, 0.1, 0.2, 0.26]];
     N.forEach(function (n) { var o = AC.createOscillator(), g = AC.createGain(); o.type = 'sine'; o.frequency.value = n[0]; o.connect(g); g.connect(AC.destination); g.gain.setValueAtTime(0.0001, t0 + n[1]); g.gain.exponentialRampToValueAtTime(n[3], t0 + n[1] + 0.01); g.gain.exponentialRampToValueAtTime(0.0001, t0 + n[1] + n[2]); o.start(t0 + n[1]); o.stop(t0 + n[1] + n[2] + 0.05); }); } catch (e) {} }
   var IOS = /iPhone|iPad|iPod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
   /* ---------- data ---------- */
@@ -172,7 +174,7 @@ a.amz{color:inherit;text-decoration:underline;text-decoration-color:rgba(138,180
     A.innerHTML = '<div class="top"><span class="ttl">📦 Prep Scan</span><span class="sp"></span><span class="sv" id="sv" onclick="ps_retry()"></span><button class="icb" id="b_tour" onclick="ps_tour()" title="Take the tour">🎧</button><button class="icb" id="b_set" onclick="ps_settings()" title="Settings">⚙</button></div><div class="who">👥 ' + E(me) + ' · which lane are you boxing?</div><div class="lanes" id="lanes">' +
       LN.map(function (l) { var d = lane(l), nb = d.boxes.length, any = d.units || nb, pc = d.units ? Math.round(d.boxed / d.units * 100) : 0;
         return '<button class="lane' + (any ? '' : ' empty') + '" style="--c:' + LC[l] + '" onclick="ps_lane(\'' + l + '\')"><div class="t"><b>' + LI[l] + ' ' + l + '</b><span>›</span></div><div class="big">' + (any ? '<b>' + d.left + '</b>left to box' : '<b>0</b>nothing to box') + '</div><div class="g3"><div>To box<b>' + d.units + '</b></div><div>Boxed<b>' + d.boxed + '</b></div><div>Boxes<b>' + nb + '</b></div></div><div class="bar"><i style="width:' + pc + '%"></i></div></button>'; }).join('') + '</div>' +
-      '<div class="row2"><button class="btn" id="b_sup" style="--c:#2EC4A4;padding:11px" onclick="ps_sup()">🧰 Supplies</button><button class="btn" style="--c:#8b95a7;padding:11px" onclick="ps_reload()">↻ Refresh</button></div>' + '<div class="note" style="margin-top:-2px">Prep Scan v16' + (GS ? ' · inside Google' : '') + '</div>';
+      '<div class="row2"><button class="btn" id="b_sup" style="--c:#2EC4A4;padding:11px" onclick="ps_sup()">🧰 Supplies</button><button class="btn" style="--c:#8b95a7;padding:11px" onclick="ps_reload()">↻ Refresh</button></div>' + '<div class="note" style="margin-top:-2px">Prep Scan v18' + (GS ? ' · inside Google' : '') + '</div>';
     var f = $('foot'); if (f) f.remove(); paintSave(); }
   /* the scan screen: built once, then only its parts are refreshed (so the live camera keeps running) */
   function paintScan(full) { var A = $('app'), d = lane(LANE); theme(LC[LANE]); setTimeout(function () { if (typeof psFit === 'function') psFit(); }, 0); setTimeout(function () { if (typeof psFit === 'function') psFit(); }, 120);
@@ -218,10 +220,12 @@ a.amz{color:inherit;text-decoration:underline;text-decoration-color:rgba(138,180
     var match = function (r) { return r.fnsku === c || (ean && ((ean.fnsku && r.fnsku === ean.fnsku) || (ean.sku && r.sku === ean.sku) || (ean.asin && asinOf(r.fnsku, r.sku) === ean.asin))); };
     var r = d.rows.find(match);
     if (!r) { var other = LN.find(function (l) { return l !== LANE && lane(l).rows.some(match); }); if (other) { var orow = lane(other).rows.find(match); popItem('wrong', orow, other); return; }
-      if (digits && !ean) { learn(digits); return; } err('none', c, 'That barcode isn’t in ' + LANE + '. Check the label, or try the item’s other barcode.'); return; }
+      unknownScan(); return; }
     var b = curBox(d); if (!b) { ps_new(function () { scan(c); }); return; }
     if (r.left <= 0) { popItem('full', r); return; }
     var cur = r.inBox[b.id] || 0; setQ(b, r, cur + 1); LAST = { item: r.item, fnsku: r.fnsku, left: r.left - 1 }; LASTFN = r.fnsku; chime('ok'); if (PS.vib) try { navigator.vibrate && navigator.vibrate(50); } catch (e) {} try { if (typeof psFlash === 'function') psFlash(r.item, picOf(r.fnsku, r.sku), b.no, col(b), (r.boxed + 1) + ' of ' + r.units + ' boxed'); } catch (e) {} RECENT.unshift({ item: r.item, no: b.no, col: col(b) }); RECENT = RECENT.slice(0, 6); camHint('✓ ' + r.item + ' — ＋1 into Box ' + b.no); paintScan(); }
+  /* v17 — a barcode Prep doesn’t recognise: no pop-up — a low buzz and “scan the label again”; the camera keeps running and is ready again in 1.5 s */
+  function unknownScan() { snd('bad'); if (CAM) { camHint('↻ Didn’t recognise that — scan the FNSKU label again', 1); CAMLAST.t = Date.now() - 3500; } else toast('↻ Didn’t recognise that — scan the FNSKU label again'); }
   /* v12 — the All boxed / Wrong lane pop-ups: picture, name, FNSKU, how many and where */
   function popItem(kind, r, other) { camOff(); snd('bad'); MODAL = 'err'; var im = picOf(r.fnsku, r.sku), c = kind === 'wrong' ? '#E5484D' : '#F0A245';
     var mid = kind === 'wrong' ? '<p>This belongs in the <b class="in">' + E(other) + '</b> lane — put it to one side for the ' + E(other) + ' boxes.</p><div class="unitsb" style="--c:' + LC[other] + '">' + LI[other] + ' ' + E(other) + ' lane</div>'
@@ -284,7 +288,7 @@ a.amz{color:inherit;text-decoration:underline;text-decoration-color:rgba(138,180
   var CAM = null, CAMLIB = 'https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js', CAMLAST = { c: '', t: 0 }, CAMBUSY = false, CAMSEEN = 0, CAMARMED = true;
   /* v11 — after a camera scan: locked for 5 seconds (countdown), then until the item has been taken away (no barcode seen for 0.7 s) */
   setInterval(function () { if (CAMARMED || CAMBUSY) return; var now = Date.now(), since = now - CAMLAST.t;
-    if (since < 5000) { if (CAM) camHint('Next scan in ' + Math.ceil((5000 - since) / 1000) + '…'); return; }
+    if (since < 5000) { if (CAM && !/Didn’t recognise/.test((($('s_hint') || {}).textContent) || '')) camHint('Next scan in ' + Math.ceil((5000 - since) / 1000) + '…'); return; }
     if (now - CAMSEEN < 700) { if (CAM) camHint('Take the item away, then scan the next one'); return; }
     CAMARMED = true; if (CAM) { camHint('✓ Ready — scan the next item'); chime('ready'); } }, 200);
   function camLib() { return new Promise(function (res, rej) { if (window.Html5Qrcode) return res(); var sc = document.createElement('script'); sc.src = CAMLIB; sc.onload = function () { window.Html5Qrcode ? res() : rej(new Error('reader did not load')); }; sc.onerror = function () { rej(new Error('Could not load the barcode reader — check the phone has internet')); }; document.head.appendChild(sc); }); }
