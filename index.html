@@ -4,7 +4,8 @@
 <meta name="theme-color" content="#0b0e13"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Prep Scan"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><title>Prep Scan</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Ctext y=%22.9em%22 font-size=%2290%22%3E📦%3C/text%3E%3C/svg%3E">
-<!-- CookStars · 📱 Prep Scan v9 (23/10/2026) — 🔗 every item name links to its Amazon listing · v8: 🎯 the camera picture itself is centred (the reader puts its video straight into the panel) · v7: 🎯 camera picture centred with our own aiming box (matches where it reads) · HD camera · ⭐ natural voices first + how to get them · v6: ⚡ opens instantly from its saved copy and uses Prep’s quick scanner call (server v40+) · v5 redesign: lane-coloured screens, big lane banner, ‹ BOX › flick, same-size live camera panel,
+<!-- CookStars · 📱 Prep Scan v10 (24/10/2026) — scan flash · only the box list scrolls · take the item away before the next scan
+<!-- previously: Prep Scan v9 (23/10/2026) — 🔗 every item name links to its Amazon listing · v8: 🎯 the camera picture itself is centred (the reader puts its video straight into the panel) · v7: 🎯 camera picture centred with our own aiming box (matches where it reads) · HD camera · ⭐ natural voices first + how to get them · v6: ⚡ opens instantly from its saved copy and uses Prep’s quick scanner call (server v40+) · v5 redesign: lane-coloured screens, big lane banner, ‹ BOX › flick, same-size live camera panel,
      what's-in-the-box list with ✎ / 🗑, 🎧 voice tour, ⚙ phone settings (text size etc). ONE file for both places:
      inside Google (prep_scan.html) and on its own web page (GitHub index.html — talks to Prep server v39+ through its scanner door). -->
 <style>
@@ -147,7 +148,7 @@ a.amz{color:inherit;text-decoration:underline;text-decoration-color:rgba(138,180
   window.ps_retry = function () { if (!QBAD) return; QBAD = 0; Q.forEach(function (j) { j.n = 0; }); pump(); paintSave(); };
   /* ---------- screens ---------- */
   function theme(c) { document.documentElement.style.setProperty('--L', c); var m = document.querySelector('meta[name=theme-color]'); if (m) m.content = '#0b0e13'; }
-  function paint() { var A = $('app');
+  function paint() { var A = $('app'); if (typeof psUnfit === 'function') psUnfit();
     if (!GS && !API) { theme('#8b95a7'); A.innerHTML = '<div class="top"><span class="ttl">📦 Prep Scan</span></div><div style="font-size:15px;line-height:1.5">To connect, open Prep on the computer → <b>Boxing → 📱 Prep Scan</b> (it opens this page already connected).<br><br>Or paste your Prep link here (it ends in <b>/exec</b>):</div><input class="in" id="apiin" style="font-size:15px" placeholder="https://script.google.com/macros/s/…/exec"><button class="btn solid" style="--c:#2EC4A4" onclick="ps_setApi()">Connect</button>'; return; }
     if (!tok) SCREEN = 'login';
     if (SCREEN === 'login') { theme('#8b95a7'); A.innerHTML = '<div class="top"><span class="ttl">📦 Prep Scan</span></div><div style="font-size:15px;opacity:.85">Who’s scanning?</div><div class="whoB"><button class="btn' + (WHO === 'prep' ? ' on' : '') + '" style="--c:#2EC4A4" onclick="ps_who(\'prep\')">👥 Prep</button><button class="btn' + (WHO === 'martin' ? ' on' : '') + '" style="--c:#E879F9" onclick="ps_who(\'martin\')">👤 Martin</button></div><input class="in" id="pin" type="password" inputmode="numeric" autocomplete="off" placeholder="Your Prep code"><button class="btn solid" style="--c:#2EC4A4" onclick="ps_login()">Sign in</button><div class="note">Same code as the Prep app.</div>'; var p = $('pin'); p.onkeydown = function (e) { if (e.key === 'Enter') ps_login(); }; return; }
@@ -159,10 +160,10 @@ a.amz{color:inherit;text-decoration:underline;text-decoration-color:rgba(138,180
     A.innerHTML = '<div class="top"><span class="ttl">📦 Prep Scan</span><span class="sp"></span><span class="sv" id="sv" onclick="ps_retry()"></span><button class="icb" id="b_tour" onclick="ps_tour()" title="Take the tour">🎧</button><button class="icb" id="b_set" onclick="ps_settings()" title="Settings">⚙</button></div><div class="who">👥 ' + E(me) + ' · which lane are you boxing?</div><div class="lanes" id="lanes">' +
       LN.map(function (l) { var d = lane(l), nb = d.boxes.length, any = d.units || nb, pc = d.units ? Math.round(d.boxed / d.units * 100) : 0;
         return '<button class="lane' + (any ? '' : ' empty') + '" style="--c:' + LC[l] + '" onclick="ps_lane(\'' + l + '\')"><div class="t"><b>' + LI[l] + ' ' + l + '</b><span>›</span></div><div class="big">' + (any ? '<b>' + d.left + '</b>left to box' : '<b>0</b>nothing to box') + '</div><div class="g3"><div>To box<b>' + d.units + '</b></div><div>Boxed<b>' + d.boxed + '</b></div><div>Boxes<b>' + nb + '</b></div></div><div class="bar"><i style="width:' + pc + '%"></i></div></button>'; }).join('') + '</div>' +
-      '<div class="row2"><button class="btn" id="b_sup" style="--c:#2EC4A4;padding:11px" onclick="ps_sup()">🧰 Supplies</button><button class="btn" style="--c:#8b95a7;padding:11px" onclick="ps_reload()">↻ Refresh</button></div>' + '<div class="note" style="margin-top:-2px">Prep Scan v9' + (GS ? ' · inside Google' : '') + '</div>';
+      '<div class="row2"><button class="btn" id="b_sup" style="--c:#2EC4A4;padding:11px" onclick="ps_sup()">🧰 Supplies</button><button class="btn" style="--c:#8b95a7;padding:11px" onclick="ps_reload()">↻ Refresh</button></div>' + '<div class="note" style="margin-top:-2px">Prep Scan v10' + (GS ? ' · inside Google' : '') + '</div>';
     var f = $('foot'); if (f) f.remove(); paintSave(); }
   /* the scan screen: built once, then only its parts are refreshed (so the live camera keeps running) */
-  function paintScan(full) { var A = $('app'), d = lane(LANE); theme(LC[LANE]);
+  function paintScan(full) { var A = $('app'), d = lane(LANE); theme(LC[LANE]); setTimeout(function () { if (typeof psFit === 'function') psFit(); }, 0); setTimeout(function () { if (typeof psFit === 'function') psFit(); }, 120);
     if (full || !$('s_root')) {
       A.innerHTML = '<div id="s_root" style="display:contents"><div class="top"><button class="icb" onclick="ps_home()" title="Back to the lanes">‹</button><span class="sp"></span><span class="sv" id="sv" onclick="ps_retry()"></span><button class="icb" id="b_tour" onclick="ps_tour()">🎧</button><button class="icb" onclick="ps_settings()">⚙</button></div>' +
         '<div class="banner" id="s_ban"></div><div class="prog"><i id="s_prog"></i></div><div id="s_box"></div>' +
@@ -207,7 +208,7 @@ a.amz{color:inherit;text-decoration:underline;text-decoration-color:rgba(138,180
       if (digits && !ean) { learn(digits); return; } err('none', c, 'That barcode isn’t in ' + LANE + '. Check the label, or try the item’s other barcode.'); return; }
     var b = curBox(d); if (!b) { ps_new(function () { scan(c); }); return; }
     if (r.left <= 0) { err('full', r.item, 'All ' + r.units + ' are in boxes already. Check the label on this one.'); return; }
-    var cur = r.inBox[b.id] || 0; setQ(b, r, cur + 1); LAST = { item: r.item, fnsku: r.fnsku, left: r.left - 1 }; LASTFN = r.fnsku; snd('ok'); camHint('✓ ' + r.item + ' — ＋1 into Box ' + b.no); paintScan(); }
+    var cur = r.inBox[b.id] || 0; setQ(b, r, cur + 1); LAST = { item: r.item, fnsku: r.fnsku, left: r.left - 1 }; LASTFN = r.fnsku; snd('ok'); try { if (typeof psFlash === 'function') psFlash(r.item, picOf(r.fnsku, r.sku), b.no, col(b)); } catch (e) {} camHint('✓ ' + r.item + ' — ＋1 into Box ' + b.no); paintScan(); }
   function learn(ean) { var d = lane(LANE), R = d.rows.slice().sort(function (a, b) { return (b.left > 0) - (a.left > 0); }); window.__psR = R; window.__psE = ean;
     err('learn', ean, 'Prep hasn’t seen this barcode before. Tap the item it belongs to — Prep remembers it from now on.', R.map(function (r, i) { var im = picOf(r.fnsku, r.sku); return '<button class="pick" onclick="ps_learn(' + i + ')"><span class="pic' + (im ? '' : ' none') + '" style="' + (im ? 'background-image:url(\'' + E(im) + '\')' : '') + '"></span><span><b>' + E(r.item) + '</b><small>' + E(r.fnsku) + ' · ' + r.left + ' left</small></span></button>'; }).join('')); }
   window.ps_learn = function (i) { var r = (window.__psR || [])[i], ean = window.__psE; if (!r) return; D.eans = D.eans || {}; D.eans[ean] = { fnsku: r.fnsku, sku: r.sku, asin: asinOf(r.fnsku, r.sku), product: r.item }; q('opsd_prepEanSet', [ean, { fnsku: r.fnsku, sku: r.sku, asin: asinOf(r.fnsku, r.sku), product: r.item }]); MODAL = ''; $('ov').innerHTML = ''; scan(ean); };
@@ -252,7 +253,9 @@ a.amz{color:inherit;text-decoration:underline;text-decoration-color:rgba(138,180
     if (Object.keys(p).length) q('opsd_prepBoxSet', function () { return [b.id, p]; }); MODAL = ''; $('ov').innerHTML = ''; CLOSE = null;
     if (andNew) { ps_new(); toast('✓ Box ' + b.no + ' closed'); } else { toast('📏 Saved'); paintScan(); } };
   /* ---------- 📷 live camera inside the same-size panel ---------- */
-  var CAM = null, CAMLIB = 'https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js', CAMLAST = { c: '', t: 0 }, CAMBUSY = false;
+  var CAM = null, CAMLIB = 'https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js', CAMLAST = { c: '', t: 0 }, CAMBUSY = false, CAMSEEN = 0, CAMARMED = true;
+  /* v10 — no quick scanning: after a scan the camera waits until it has seen NO barcode for 0.7 s (the item was taken away) */
+  setInterval(function () { if (!CAMARMED && !CAMBUSY && Date.now() - CAMSEEN >= 700) { CAMARMED = true; if (CAM) camHint('✓ Ready — scan the next item'); } else if (!CAMARMED && !CAMBUSY && CAM) camHint('Take the item away, then scan the next one'); }, 200);
   function camLib() { return new Promise(function (res, rej) { if (window.Html5Qrcode) return res(); var sc = document.createElement('script'); sc.src = CAMLIB; sc.onload = function () { window.Html5Qrcode ? res() : rej(new Error('reader did not load')); }; sc.onerror = function () { rej(new Error('Could not load the barcode reader — check the phone has internet')); }; document.head.appendChild(sc); }); }
   function fmts() { var F = window.Html5QrcodeSupportedFormats || {}; return ['CODE_128', 'EAN_13', 'EAN_8', 'UPC_A', 'UPC_E', 'CODE_39', 'ITF', 'QR_CODE'].map(function (k) { return F[k]; }).filter(function (x) { return x !== undefined; }); }
   function camWhy(e) { var n = (e && (e.name || '')) + ' ' + String((e && e.message) || e || '');
@@ -269,7 +272,7 @@ a.amz{color:inherit;text-decoration:underline;text-decoration-color:rgba(138,180
   /* the aiming box always matches the reading area: half the visible camera picture, 85% wide, centred */
   function sizeAim() { var a = $('s_aim'), pc = $('s_cam'), vd = document.querySelector('#reader video'); if (!a || !pc || !vd) return; var pr = pc.getBoundingClientRect(), vr = vd.getBoundingClientRect(); if (!pr.height || !vr.height) return;
     var vis = Math.min(vr.height, pr.height), hp = Math.max(18, vis * 0.5 / pr.height * 100); a.style.top = ((100 - hp) / 2) + '%'; a.style.bottom = ((100 - hp) / 2) + '%'; }
-  function camHit(text) { var c = String(text || '').trim().toUpperCase(), now = Date.now(); if (!c || CAMBUSY || MODAL || (c === CAMLAST.c && now - CAMLAST.t < 1800)) return; CAMLAST = { c: c, t: now }; CAMBUSY = true; var a = $('s_aim'); if (a) { a.classList.add('hit'); setTimeout(function () { a.classList.remove('hit'); }, 450); } scan(c); setTimeout(function () { CAMBUSY = false; }, 700); }
+  function camHit(text) { var c = String(text || '').trim().toUpperCase(), now = Date.now(); CAMSEEN = now; if (!c || MODAL) return; if (!CAMARMED || CAMBUSY) return; CAMARMED = false; CAMLAST = { c: c, t: now }; CAMBUSY = true; var a = $('s_aim'); if (a) { a.classList.add('hit'); setTimeout(function () { a.classList.remove('hit'); }, 450); } scan(c); setTimeout(function () { CAMBUSY = false; }, 700); }
   function camOff() { var c = CAM; CAM = null; if (c) { try { c.stop().then(function () { try { c.clear(); } catch (e) {} }).catch(function () {}); } catch (e) {} } if ($('reader')) camPanelLive(false); }
   window.ps_camStop = function () { camOff(); };
   /* ---------- 📸 photo (several tries: sideways, zoomed, smaller, high contrast) ---------- */
@@ -359,4 +362,32 @@ a.amz{color:inherit;text-decoration:underline;text-decoration-color:rgba(138,180
   setInterval(function () { if (tok && !Q.length && !MODAL && !LOADING && TI < 0 && !CAM && document.visibilityState === 'visible' && (SCREEN === 'lanes' || SCREEN === 'scan')) load(true); }, 30000);
   paint();
 })();
-</script></body></html>
+</script>
+<style>/* Prep Scan v10 — compact top while scanning, so the box list has room */
+body.psfit #app .banner{padding:6px 12px;border-radius:14px}body.psfit #app .banner b{font-size:18px}body.psfit #app .banner span{font-size:11px}
+body.psfit #app .box{padding:4px 8px;border-width:3px;border-radius:16px}body.psfit #app .box .ar{height:40px;font-size:22px}body.psfit #app .box .mid b{font-size:26px}body.psfit #app .box .mid small{display:none}body.psfit #app .box .mid span{font-size:12px}body.psfit #app .dots{margin-top:2px}
+body.psfit #app .cam{--camH:150px}body.psfit #app .two button,body.psfit #app .two label{padding:8px 6px}</style>
+<style>/* Prep Scan v10 — scan flash */
+#psfl{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;z-index:99999;pointer-events:none;opacity:0;transition:opacity .18s;background:rgba(5,8,12,.35)}
+#psfl.on{opacity:1}#psfl .c{width:min(88vw,380px);background:#141a24;border:3px solid var(--bc);border-radius:22px;padding:18px;text-align:center;box-shadow:0 0 0 6px color-mix(in srgb,var(--bc) 25%,transparent),0 20px 50px rgba(0,0,0,.6);transform:scale(.9);transition:transform .18s}
+#psfl.on .c{transform:scale(1)}#psfl .p{display:block;width:62vw;max-width:230px;aspect-ratio:1;margin:0 auto 12px;border-radius:16px;background:#fff center/contain no-repeat}#psfl .p.none{background:#232a36}
+#psfl .t{font-size:18px;font-weight:900;line-height:1.3;color:#e8ecf2;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+#psfl .b{display:inline-block;margin-top:12px;background:var(--bc);color:#06120f;font-weight:900;font-size:22px;border-radius:12px;padding:6px 18px}</style>
+<script>
+/* Prep Scan v10 — the flash of what was just scanned and boxed · only the box list scrolls on the scan screen */
+var PSFL = null;
+function psFlash(item, img, boxNo, colr) { var o = document.getElementById('psfl'); if (o) o.remove(); clearTimeout(PSFL); var d = document.createElement('div'); d.id = 'psfl'; d.style.setProperty('--bc', colr || '#2EC4A4');
+  var esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
+  d.innerHTML = '<div class="c"><span class="p' + (img ? '' : ' none') + '" style="' + (img ? 'background-image:url(\'' + esc(img) + '\')' : '') + '"></span><div class="t">' + esc(item) + '</div><div class="b">＋1 → BOX ' + esc(boxNo) + '</div></div>';
+  document.body.appendChild(d); requestAnimationFrame(function () { d.classList.add('on'); }); PSFL = setTimeout(function () { d.classList.remove('on'); setTimeout(function () { d.remove(); }, 220); }, 1500); }
+function psFit() { var A = document.getElementById('app'), L = document.getElementById('s_list'); if (!A || !L) return; var f = document.getElementById('foot'), fh = f ? f.getBoundingClientRect().height : 0;
+  document.body.classList.add('psfit'); var cs = getComputedStyle(A), z = parseFloat(cs.zoom) || 1; A.style.minHeight = '0'; A.style.paddingBottom = '0px'; var top = A.getBoundingClientRect().top;
+  A.style.display = 'flex'; A.style.flexDirection = 'column'; A.style.overflow = 'hidden'; A.style.height = Math.max(60, Math.floor((window.innerHeight - top - fh) / z)) + 'px';
+  var R = document.getElementById('s_root'); if (R) [].slice.call(R.children).forEach(function (c) { c.style.flex = c.id === 's_list' ? '1 1 auto' : '0 0 auto'; });
+  L.style.minHeight = '0'; L.style.paddingBottom = '12px'; L.style.overflowY = 'auto'; L.style.webkitOverflowScrolling = 'touch'; document.body.style.overflow = 'hidden';
+  /* a small screen with big text: no real room for the list underneath — scroll the whole screen as normal instead of squashing it */
+  if (L.getBoundingClientRect().height < 100 || (f && L.getBoundingClientRect().bottom > f.querySelector('button').getBoundingClientRect().top + 2)) psUnfit(); }
+function psUnfit() { document.body.classList.remove('psfit'); var A = document.getElementById('app'); if (!A) return; var L0 = document.getElementById('s_list'); if (L0) L0.style.paddingBottom = ''; A.style.display = ''; A.style.flexDirection = ''; A.style.overflow = ''; A.style.height = ''; A.style.minHeight = ''; A.style.paddingBottom = ''; document.body.style.overflow = ''; }
+window.addEventListener('resize', function () { if (document.getElementById('s_list')) psFit(); });
+</script>
+</body></html>
