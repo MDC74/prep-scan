@@ -4,7 +4,7 @@
 <meta name="theme-color" content="#0b0e13"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Prep Scan"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><title>Prep Scan</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Ctext y=%22.9em%22 font-size=%2290%22%3E📦%3C/text%3E%3C/svg%3E">
-<!-- CookStars · 📱 Prep Scan v39 (24/10/2026) — 🔑 Passwords for today (Amazon / Other tabs) · Supplies and Refresh become small icons — needs Prep server v61
+<!-- CookStars · 📱 Prep Scan v40 (30/10/2026) — steady screen: refreshes never bounce you about · v39 (24/10/2026) — 🔑 Passwords for today (Amazon / Other tabs) · Supplies and Refresh become small icons — needs Prep server v61
 <!-- v38 (24/10/2026) — no new box in a lane with nothing left to box (anywhere)
 <!-- v37 (24/10/2026) — Size & weight: every tap counts first time (no redraw under your finger) · tapping a square starts that number fresh · Next › key
 <!-- v36 (24/10/2026) — ⚡ changes from the computer show within about 5 s (needs Prep server v57)
@@ -169,8 +169,20 @@ a.amz{color:inherit;text-decoration:underline;text-decoration-color:rgba(138,180
   function fetchAll() { if (FAST) return run('opsd_prepScanData').then(function (r) { return [{ user: r.user, rcpts: r.rcpts, settings: r.settings, eans: r.eans, pics: r.pics, inv: { lines: [] }, pwToday: r.pwToday || [], mail: r.mail || {} }, r.box]; })
       .catch(function (e) { if (/isn’t allowed|is not a function|not defined|Script function not found/i.test(String((e && e.message) || e))) { FAST = false; return fetchAll(); } throw e; });
     return Promise.all([run('opsd_prepBoot'), run('opsd_prepBoxData')]); }
+
+  /* ---------- v40 — steady screen: refreshes never bounce you about ---------- */
+  var SIG40 = null, HELD40 = null, HSIG40 = null, LAST40 = 0;
+  function psSig40(r) { try { return JSON.stringify(r, function (k, v) { return /^(now|at|ts|took|ms|time|serverAt|keptAt|updated|age|loadedAt)$/.test(k) ? undefined : v; }); } catch (e) { return String(Math.random()); } }
+  function psBusy40() { return !!MODAL || Date.now() - LAST40 < 4000; }
+  ['touchstart', 'touchmove', 'pointerdown', 'wheel', 'keydown'].forEach(function (ev) { document.addEventListener(ev, function () { LAST40 = Date.now(); }, { passive: true, capture: true }); });
+  document.addEventListener('scroll', function () { LAST40 = Date.now(); }, { passive: true, capture: true });
+  function psKeep40(fn) { var y = window.pageYOffset || 0, keep = {};
+    try { var app = $('app'); if (app) [].forEach.call(app.querySelectorAll('[id]'), function (el) { if (el.scrollHeight > el.clientHeight + 2 && el.scrollTop > 0) keep[el.id] = el.scrollTop; }); } catch (e) {}
+    try { fn(); } finally { var back = function () { try { Object.keys(keep).forEach(function (id) { var el = $(id); if (el) el.scrollTop = keep[id]; }); if (Math.abs((window.pageYOffset || 0) - y) > 1) window.scrollTo(0, y); } catch (e) {} };
+      back(); try { requestAnimationFrame(back); } catch (e) {} setTimeout(back, 60); } }
+  setInterval(function () { if (!HELD40 || psBusy40() || Q.length || QBUSY || LOADING) return; var r = HELD40; HELD40 = null; SIG40 = HSIG40; D = r[0]; PB = r[1]; cacheSave(); psKeep40(function () { if (SCREEN === 'scan' && $('s_root')) paintScan(); else paint(); }); }, 1000);
   function load(quiet) { if (LOADING) return; LOADING = true; if (!quiet) paint(); paintSave();
-    fetchAll().then(function (r) { LOADING = false; LOADED = Date.now(); if (Q.length) { paintSave(); return; } D = r[0]; PB = r[1]; cacheSave(); if (SCREEN === 'scan' && $('s_root')) paintScan(); else paint(); setTimeout(function () { camLib().catch(function () {}); }, 1200); })
+    fetchAll().then(function (r) { LOADING = false; LOADED = Date.now(); if (Q.length) { paintSave(); return; } /* v40 — no redraw when nothing changed · never while you are touching/scrolling (held until you stop) · your place is kept */ var sig = psSig40(r); if (quiet && D && PB && sig === SIG40) return; if (quiet && D && PB && psBusy40()) { HELD40 = r; HSIG40 = sig; return; } SIG40 = sig; D = r[0]; PB = r[1]; cacheSave(); psKeep40(function () { if (SCREEN === 'scan' && $('s_root')) paintScan(); else paint(); }); setTimeout(function () { camLib().catch(function () {}); }, 1200); })
       .catch(function (e) { LOADING = false; paintSave(); var m = String((e && e.message) || e); if (/SIGNED_OUT/.test(m)) { tok = ''; try { localStorage.removeItem(TK); localStorage.removeItem(CK); } catch (x) {} D = PB = null; SCREEN = 'login'; paint(); } else if (!quiet) { toast('⚠ ' + m); paint(); } else toast('⚠ Couldn’t refresh — showing your last copy'); }); }
   /* ---------- saving: one at a time, retried, never dropped ---------- */
   function q(fn, args, after) { Q.push({ fn: fn, args: args, after: after, n: 0 }); pump(); paintSave(); cacheSave(); }
@@ -201,7 +213,7 @@ a.amz{color:inherit;text-decoration:underline;text-decoration-color:rgba(138,180
           : d.left ? '<button class="lb out" onclick="ps_left(\'' + l + '\')"><small>📋 LEFT TO BOX</small><big>' + d.left + '</big><small>see list ›</small></button>'
           : '<div class="lb out off"><small>📋 LEFT TO BOX</small><big>0</big><small>nothing to box</small></div>';
         return '<div class="lane' + (any ? '' : ' empty') + '" style="--c:' + LC[l] + '"><div class="lsplit">' + left + '<button class="lb solid lname" onclick="ps_lane(\'' + l + '\')"><span class="le">' + LI[l] + '</span><span class="ln">' + l + ' ›</span></button></div><div class="g3"><div>To box<b>' + d.units + '</b></div><div>Boxed<b>' + d.boxed + '</b></div><div>Boxes<b>' + nb + '</b></div></div><div class="bar"><i style="width:' + pc + '%"></i></div></div>'; }).join('') + '</div>' +
-      '<div class="row3"><button class="btn pwb" id="b_pw" onclick="ps_pw()">🔑 Passwords' + ((D.pwToday || []).length ? '<i>' + D.pwToday.length + '</i>' : '') + '</button><button class="btn icb2" id="b_sup" style="--c:#2EC4A4" onclick="ps_sup()" title="Supplies">🧰</button><button class="btn icb2" style="--c:#8b95a7" onclick="ps_reload()" title="Refresh">↻</button></div>' + '<div class="note" style="margin-top:-2px">Prep Scan v39' + (GS ? ' · inside Google' : '') + '</div>';
+      '<div class="row3"><button class="btn pwb" id="b_pw" onclick="ps_pw()">🔑 Passwords' + ((D.pwToday || []).length ? '<i>' + D.pwToday.length + '</i>' : '') + '</button><button class="btn icb2" id="b_sup" style="--c:#2EC4A4" onclick="ps_sup()" title="Supplies">🧰</button><button class="btn icb2" style="--c:#8b95a7" onclick="ps_reload()" title="Refresh">↻</button></div>' + '<div class="note" style="margin-top:-2px">Prep Scan v40' + (GS ? ' · inside Google' : '') + '</div>';
     var f = $('foot'); if (f) f.remove(); paintSave(); setTimeout(fitLaneNames, 0); }
   /* v29 — the lane names always fit their buttons, at the same size on all three cards */
   function fitLaneNames() { var N = [].slice.call(document.querySelectorAll('#lanes .lb.lname .ln')); if (!N.length) return; N.forEach(function (n) { n.style.fontSize = ''; });
