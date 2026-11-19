@@ -4,7 +4,7 @@
 <meta name="theme-color" content="#0b0e13"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Prep Scan"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><title>Prep Scan</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Ctext y=%22.9em%22 font-size=%2290%22%3E📦%3C/text%3E%3C/svg%3E">
-<!-- CookStars · 📱 Prep Scan v40 (30/10/2026) — steady screen: refreshes never bounce you about · v39 (24/10/2026) — 🔑 Passwords for today (Amazon / Other tabs) · Supplies and Refresh become small icons — needs Prep server v61
+<!-- CookStars · 📱 Prep Scan v42 (19/11/2026) — each scan asks “is going into Box N — correct?” (★ Yes / ✕ No) before it goes in · v41 (19/11/2026) — a refresh never undoes your own latest scans (no more scans into the box before, or a unit boxed twice) · v40 (30/10/2026) — steady screen: refreshes never bounce you about · v39 (24/10/2026) — 🔑 Passwords for today (Amazon / Other tabs) · Supplies and Refresh become small icons — needs Prep server v61
 <!-- v38 (24/10/2026) — no new box in a lane with nothing left to box (anywhere)
 <!-- v37 (24/10/2026) — Size & weight: every tap counts first time (no redraw under your finger) · tapping a square starts that number fresh · Next › key
 <!-- v36 (24/10/2026) — ⚡ changes from the computer show within about 5 s (needs Prep server v57)
@@ -113,6 +113,10 @@ button{font-family:inherit;color:inherit}
 #tcard .ft{display:flex;align-items:center;gap:8px;margin-top:12px}#tcard .ft .sp{flex:1}#tcard .spk{border:1.5px solid #E879F9;color:#f0a8fb;background:transparent;border-radius:99px;padding:4px 10px;font-size:12px;font-weight:900;cursor:pointer}
 #tcard .n{border:2px solid #3a3f4d;background:transparent;border-radius:12px;padding:9px 14px;font-weight:900;cursor:pointer}#tcard .n.go{border-color:#2EC4A4;color:#4fe3c1}#tcard .n:disabled{opacity:.3}
 a.amz{color:inherit;text-decoration:underline;text-decoration-color:rgba(138,180,248,.6);text-underline-offset:3px}
+</style>
+<style>/* Prep Scan v42 — “is going into Box N — correct?” */
+.ask42 .box42{display:inline-block;border:3px solid var(--bc);color:var(--bc);background:color-mix(in srgb,var(--bc) 14%,transparent);border-radius:16px;padding:6px 22px;font-size:34px;font-weight:900;letter-spacing:.04em;margin:4px 0 8px}
+@keyframes yes42{0%,100%{box-shadow:0 0 0 0 rgba(46,196,164,0),0 0 18px rgba(46,196,164,.55)}50%{box-shadow:0 0 0 6px rgba(46,196,164,.25),0 0 30px rgba(46,196,164,.9)}}.ask42 .yes42{animation:yes42 1.6s ease-in-out infinite}
 </style></head><body>
 <div id="app"></div><div id="ov"></div><input id="hid" autocomplete="off" autocapitalize="characters" spellcheck="false" aria-hidden="true">
 <script>
@@ -172,6 +176,10 @@ a.amz{color:inherit;text-decoration:underline;text-decoration-color:rgba(138,180
 
   /* ---------- v40 — steady screen: refreshes never bounce you about ---------- */
   var SIG40 = null, HELD40 = null, HSIG40 = null, LAST40 = 0;
+  /* v41 — every change on this phone moves CHG41. A refresh read before the latest change would put the old boxes back
+     (a new box disappears, a scan is forgotten), so it is put aside and asked for again once everything is saved. */
+  var CHG41 = 0, HCHG41 = 0, AG41 = 0;
+  function again41() { clearTimeout(AG41); AG41 = setTimeout(function () { if (Q.length || QBUSY || LOADING) { again41(); return; } load(true); }, 1200); }
   function psSig40(r) { try { return JSON.stringify(r, function (k, v) { return /^(now|at|ts|took|ms|time|serverAt|keptAt|updated|age|loadedAt)$/.test(k) ? undefined : v; }); } catch (e) { return String(Math.random()); } }
   function psBusy40() { return !!MODAL || Date.now() - LAST40 < 4000; }
   ['touchstart', 'touchmove', 'pointerdown', 'wheel', 'keydown'].forEach(function (ev) { document.addEventListener(ev, function () { LAST40 = Date.now(); }, { passive: true, capture: true }); });
@@ -180,17 +188,17 @@ a.amz{color:inherit;text-decoration:underline;text-decoration-color:rgba(138,180
     try { var app = $('app'); if (app) [].forEach.call(app.querySelectorAll('[id]'), function (el) { if (el.scrollHeight > el.clientHeight + 2 && el.scrollTop > 0) keep[el.id] = el.scrollTop; }); } catch (e) {}
     try { fn(); } finally { var back = function () { try { Object.keys(keep).forEach(function (id) { var el = $(id); if (el) el.scrollTop = keep[id]; }); if (Math.abs((window.pageYOffset || 0) - y) > 1) window.scrollTo(0, y); } catch (e) {} };
       back(); try { requestAnimationFrame(back); } catch (e) {} setTimeout(back, 60); } }
-  setInterval(function () { if (!HELD40 || psBusy40() || Q.length || QBUSY || LOADING) return; var r = HELD40; HELD40 = null; SIG40 = HSIG40; D = r[0]; PB = r[1]; cacheSave(); psKeep40(function () { if (SCREEN === 'scan' && $('s_root')) paintScan(); else paint(); }); }, 1000);
-  function load(quiet) { if (LOADING) return; LOADING = true; if (!quiet) paint(); paintSave();
-    fetchAll().then(function (r) { LOADING = false; LOADED = Date.now(); if (Q.length) { paintSave(); return; } /* v40 — no redraw when nothing changed · never while you are touching/scrolling (held until you stop) · your place is kept */ var sig = psSig40(r); if (quiet && D && PB && sig === SIG40) return; if (quiet && D && PB && psBusy40()) { HELD40 = r; HSIG40 = sig; return; } SIG40 = sig; D = r[0]; PB = r[1]; cacheSave(); psKeep40(function () { if (SCREEN === 'scan' && $('s_root')) paintScan(); else paint(); }); setTimeout(function () { camLib().catch(function () {}); }, 1200); })
+  setInterval(function () { if (!HELD40 || psBusy40() || Q.length || QBUSY || LOADING) return; var r = HELD40; HELD40 = null; if (HCHG41 !== CHG41) { again41(); return; } SIG40 = HSIG40; D = r[0]; PB = r[1]; cacheSave(); psKeep40(function () { if (SCREEN === 'scan' && $('s_root')) paintScan(); else paint(); }); }, 1000);
+  function load(quiet) { if (LOADING) return; if (D && PB && (Q.length || QBUSY)) { again41(); return; } LOADING = true; var c41 = CHG41; if (!quiet) paint(); paintSave();
+    fetchAll().then(function (r) { LOADING = false; LOADED = Date.now(); if (D && PB && (Q.length || QBUSY || CHG41 !== c41)) { paintSave(); again41(); return; } /* v40 — no redraw when nothing changed · never while you are touching/scrolling (held until you stop) · your place is kept */ var sig = psSig40(r); if (quiet && D && PB && sig === SIG40) { paintSave(); return; } if (quiet && D && PB && psBusy40()) { HELD40 = r; HSIG40 = sig; HCHG41 = c41; paintSave(); return; } SIG40 = sig; D = r[0]; PB = r[1]; cacheSave(); psKeep40(function () { if (SCREEN === 'scan' && $('s_root')) paintScan(); else paint(); }); setTimeout(function () { camLib().catch(function () {}); }, 1200); })
       .catch(function (e) { LOADING = false; paintSave(); var m = String((e && e.message) || e); if (/SIGNED_OUT/.test(m)) { tok = ''; try { localStorage.removeItem(TK); localStorage.removeItem(CK); } catch (x) {} D = PB = null; SCREEN = 'login'; paint(); } else if (!quiet) { toast('⚠ ' + m); paint(); } else toast('⚠ Couldn’t refresh — showing your last copy'); }); }
   /* ---------- saving: one at a time, retried, never dropped ---------- */
-  function q(fn, args, after) { Q.push({ fn: fn, args: args, after: after, n: 0 }); pump(); paintSave(); cacheSave(); }
+  function q(fn, args, after, undo) { CHG41++; SIG40 = null; Q.push({ fn: fn, args: args, after: after, n: 0, u: undo }); pump(); paintSave(); cacheSave(); }
   function pump() { if (QBUSY || !Q.length) return; QBUSY = true; var j = Q[0], a = typeof j.args === 'function' ? j.args() : j.args;
     run.apply(null, [j.fn].concat(a)).then(function (r) { Q.shift(); QBUSY = false; QBAD = 0; if (j.after) try { j.after(r); } catch (e) {} paintSave(); pump(); })
       .catch(function (e) { QBUSY = false; j.n++; var m = String((e && e.message) || e);
         /* v15 — Prep answered “no” (not a connection problem): show why, drop that save, re-sync so the phone matches Prep, carry on */
-        if (!/SIGNED_OUT|NO_API|Failed to fetch|NetworkError|Load failed|didn’t answer|network|timeout|offline/i.test(m)) { Q.shift(); QBAD = 0; toast('⚠ Prep said no: ' + m.slice(0, 90)); paintSave(); setTimeout(function () { load(true); }, 300); pump(); return; }
+        if (!/SIGNED_OUT|NO_API|Failed to fetch|NetworkError|Load failed|didn’t answer|network|timeout|offline/i.test(m)) { Q.shift(); QBAD = 0; if (j.u) try { j.u(); if (SCREEN === 'scan' && $('s_root')) paintScan(); } catch (x) {} if (j.fn === 'opsd_prepBoxQty' && /^🛑/.test(m)) stop41(a, m); else toast('⚠ Prep said no: ' + m.slice(0, 90)); paintSave(); setTimeout(function () { load(true); }, 300); pump(); return; }
         if (/SIGNED_OUT/.test(m) || j.n >= 4) { QBAD = 1; paintSave(); if (j.n >= 4) toast('⚠ Not saved yet (no connection) — tap the red “not saved” to try again'); return; } setTimeout(pump, 800 * j.n); }); }
   window.addEventListener('beforeunload', function (e) { if (Q.length) { e.preventDefault(); e.returnValue = 'Still saving'; } });
   function paintSave() { var s = $('sv'); if (!s) return; s.className = 'sv' + (QBAD ? ' bad' : Q.length || LOADING ? ' on' : ''); s.textContent = QBAD ? '⚠ not saved · retry' : Q.length ? '⏳ saving ' + Q.length : LOADING ? '↻ updating' : '✓ up to date'; }
@@ -213,7 +221,7 @@ a.amz{color:inherit;text-decoration:underline;text-decoration-color:rgba(138,180
           : d.left ? '<button class="lb out" onclick="ps_left(\'' + l + '\')"><small>📋 LEFT TO BOX</small><big>' + d.left + '</big><small>see list ›</small></button>'
           : '<div class="lb out off"><small>📋 LEFT TO BOX</small><big>0</big><small>nothing to box</small></div>';
         return '<div class="lane' + (any ? '' : ' empty') + '" style="--c:' + LC[l] + '"><div class="lsplit">' + left + '<button class="lb solid lname" onclick="ps_lane(\'' + l + '\')"><span class="le">' + LI[l] + '</span><span class="ln">' + l + ' ›</span></button></div><div class="g3"><div>To box<b>' + d.units + '</b></div><div>Boxed<b>' + d.boxed + '</b></div><div>Boxes<b>' + nb + '</b></div></div><div class="bar"><i style="width:' + pc + '%"></i></div></div>'; }).join('') + '</div>' +
-      '<div class="row3"><button class="btn pwb" id="b_pw" onclick="ps_pw()">🔑 Passwords' + ((D.pwToday || []).length ? '<i>' + D.pwToday.length + '</i>' : '') + '</button><button class="btn icb2" id="b_sup" style="--c:#2EC4A4" onclick="ps_sup()" title="Supplies">🧰</button><button class="btn icb2" style="--c:#8b95a7" onclick="ps_reload()" title="Refresh">↻</button></div>' + '<div class="note" style="margin-top:-2px">Prep Scan v40' + (GS ? ' · inside Google' : '') + '</div>';
+      '<div class="row3"><button class="btn pwb" id="b_pw" onclick="ps_pw()">🔑 Passwords' + ((D.pwToday || []).length ? '<i>' + D.pwToday.length + '</i>' : '') + '</button><button class="btn icb2" id="b_sup" style="--c:#2EC4A4" onclick="ps_sup()" title="Supplies">🧰</button><button class="btn icb2" style="--c:#8b95a7" onclick="ps_reload()" title="Refresh">↻</button></div>' + '<div class="note" style="margin-top:-2px">Prep Scan v42' + (GS ? ' · inside Google' : '') + '</div>';
     var f = $('foot'); if (f) f.remove(); paintSave(); setTimeout(fitLaneNames, 0); }
   /* v29 — the lane names always fit their buttons, at the same size on all three cards */
   function fitLaneNames() { var N = [].slice.call(document.querySelectorAll('#lanes .lb.lname .ln')); if (!N.length) return; N.forEach(function (n) { n.style.fontSize = ''; });
@@ -280,7 +288,9 @@ a.amz{color:inherit;text-decoration:underline;text-decoration-color:rgba(138,180
   /* ---------- scanning ---------- */
   function setQ(b, r, qn, noUndo) { var it = PB.items.find(function (x) { return x.box === b.id && x.fnsku === r.fnsku; }), cur = it ? it.qty : 0; if (!noUndo) UNDO.push([{ b: b, r: r, prev: cur }]);
     if (it) it.qty = qn; else PB.items.push({ box: b.id, fnsku: r.fnsku, sku: r.sku, item: r.item, qty: qn }); PB.items = PB.items.filter(function (x) { return x.qty > 0; });
-    q('opsd_prepBoxQty', function () { return [b.id, r.fnsku, r.sku, r.item, qn, { asin: asinOf(r.fnsku, r.sku), image: picOf(r.fnsku, r.sku) }]; }); }
+    q('opsd_prepBoxQty', function () { return [b.id, r.fnsku, r.sku, r.item, qn, { asin: asinOf(r.fnsku, r.sku), image: picOf(r.fnsku, r.sku) }]; }, null,
+      function () { if (!PB) return; var it2 = PB.items.find(function (x) { return x.box === b.id && x.fnsku === r.fnsku; }); if (it2 ? it2.qty !== qn : qn !== 0) return;   /* v41 — Prep said no: put back what the box had */
+        if (it2) it2.qty = cur; else if (cur > 0) PB.items.push({ box: b.id, fnsku: r.fnsku, sku: r.sku, item: r.item, qty: cur }); PB.items = PB.items.filter(function (x) { return x.qty > 0; }); }); }
   function camHint(t, bad) { var h = $('s_hint'); if (h) { h.textContent = t; h.className = 'hint' + (bad ? ' bad' : ''); } }
   function err(kind, title, msg, extra) { camOff(); snd('bad'); MODAL = 'err'; var c = { wrong: '#E5484D', full: '#F0A245', none: '#E5484D', learn: '#2EC4A4', photo: '#F0A245' }[kind] || '#E5484D';
     $('ov').innerHTML = '<div class="ov mid"><div class="err" style="--c:' + c + '"><div class="h">' + ({ wrong: '⚠ WRONG LANE', full: '🛑 ALL BOXED ALREADY', none: '✕ NOT FOUND', learn: '▥ NEW BARCODE', photo: '📸 COULDN’T READ IT' }[kind]) + '</div><b>' + E(title) + '</b><p>' + msg + '</p>' + (extra || '') + '<button class="btn" style="--c:#fff" onclick="ps_ok()">OK</button></div></div>'; }
@@ -293,7 +303,21 @@ a.amz{color:inherit;text-decoration:underline;text-decoration-color:rgba(138,180
       unknownScan(); return; }
     var b = curBox(d); if (!b) { ps_new(function () { scan(c); }); return; }
     if (r.left <= 0) { popItem('full', r); return; }
-    var cur = r.inBox[b.id] || 0; setQ(b, r, cur + 1); LAST = { item: r.item, fnsku: r.fnsku, left: r.left - 1 }; LASTFN = r.fnsku; chime('ok'); if (PS.vib) try { navigator.vibrate && navigator.vibrate(50); } catch (e) {} try { if (typeof psFlash === 'function') psFlash(r.item, picOf(r.fnsku, r.sku), b.no, col(b), (r.boxed + 1) + ' of ' + r.units + ' boxed'); } catch (e) {} RECENT.unshift({ item: r.item, no: b.no, col: col(b) }); RECENT = RECENT.slice(0, 6); if (r.left - 1 <= 0 && !lane(LANE).left) setTimeout(function () { if (SCREEN === 'scan' && !MODAL) ps_allDone(); }, 2800); camHint('✓ ' + r.item + ' — ＋1 into Box ' + b.no); paintScan(); }
+    ask42(b, r); }   /* v42 — it asks first: “is going into Box N — correct?” */
+  /* v42 — ★ Yes: the unit goes in (what a scan did before v42, without the second “＋1” flash — she has just said yes) */
+  function add42(b, r) { var cur = r.inBox[b.id] || 0; setQ(b, r, cur + 1); LAST = { item: r.item, fnsku: r.fnsku, left: r.left - 1 }; LASTFN = r.fnsku; chime('ok'); if (PS.vib) try { navigator.vibrate && navigator.vibrate(50); } catch (e) {} RECENT.unshift({ item: r.item, no: b.no, col: col(b) }); RECENT = RECENT.slice(0, 6); if (r.left - 1 <= 0 && !lane(LANE).left) setTimeout(function () { if (SCREEN === 'scan' && !MODAL) ps_allDone(); }, 2800); camHint('✓ ' + r.item + ' — ＋1 into Box ' + b.no); paintScan(); }
+  var ASK42 = null;
+  function ask42(b, r) { ASK42 = { box: b, fn: r.fnsku }; MODAL = 'ask'; var im = picOf(r.fnsku, r.sku), c = col(b);
+    $('ov').innerHTML = '<div class="ov mid"><div class="err pop ask42" style="--c:' + c + '"><div class="h">📦 IS THIS RIGHT?</div>' +
+      '<div class="pp' + (im ? '' : ' none') + '" style="' + (im ? 'background-image:url(\'' + E(im) + '\')' : '') + '"></div><b class="nm">' + amzA(r.fnsku, r.sku, r.item) + '</b><div class="fn">' + E(r.fnsku) + '</div>' +
+      '<p style="font-size:17px;margin:10px 0 2px">is going into</p><div class="box42" style="--bc:' + c + '">BOX ' + E(b.no) + '</div><p style="font-size:19px;font-weight:900;margin:6px 0 14px">Correct?</p>' +
+      '<div class="row2"><button class="btn solid yes42" style="--c:#2EC4A4;font-size:20px" onclick="ps_yes42()">★ ✓ Yes</button><button class="btn no42" style="--c:#E5484D;font-size:20px" onclick="ps_no42()">✕ No</button></div></div></div>'; }
+  window.ps_yes42 = function () { var a = ASK42; ASK42 = null; if (!a) return; MODAL = ''; $('ov').innerHTML = '';
+    var d = lane(LANE), b = d.boxes.find(function (x) { return x === a.box || x.id === a.box.id; }), r = d.rows.find(function (x) { return x.fnsku === a.fn; });
+    if (!b) { snd('bad'); toast('Box ' + a.box.no + ' isn’t there any more — pick a box, then scan it again'); paintScan(); return; }
+    if (!r || r.left <= 0) { if (r) popItem('full', r); else paintScan(); return; }
+    add42(b, r); };
+  window.ps_no42 = function () { if (!ASK42) return; var a = ASK42; ASK42 = null; MODAL = ''; $('ov').innerHTML = ''; camHint('✕ Not added — go to the right box, then scan it again'); toast('✕ Not added to Box ' + a.box.no); };
   /* v17 — a barcode Prep doesn’t recognise: no pop-up — a low buzz and “scan the label again”; the camera keeps running and is ready again in 1.5 s */
   function unknownScan() { snd('bad'); if (CAM) { camHint('↻ Didn’t recognise that — scan the FNSKU label again', 1); CAMLAST.t = Date.now() - 3500; } else toast('↻ Didn’t recognise that — scan the FNSKU label again'); }
   /* v12 — the All boxed / Wrong lane pop-ups: picture, name, FNSKU, how many and where */
@@ -301,6 +325,15 @@ a.amz{color:inherit;text-decoration:underline;text-decoration-color:rgba(138,180
     var mid = kind === 'wrong' ? '<p>This belongs in the <b class="in">' + E(other) + '</b> lane — put it to one side for the ' + E(other) + ' boxes.</p><div class="unitsb" style="--c:' + LC[other] + '">' + LI[other] + ' ' + E(other) + ' lane</div>'
       : '<p>All <b class="in">' + r.units + '</b> are in boxes already — check the label on this one.</p><button class="unitsb" style="--c:#F0A245" onclick="ps_where(\'' + J(r.fnsku) + '\')">📦 ' + r.boxed + ' of ' + r.units + ' boxed · where? ›</button>';
     $('ov').innerHTML = '<div class="ov mid"><div class="err pop" style="--c:' + c + '"><div class="h">' + (kind === 'wrong' ? '⚠ WRONG LANE' : '🛑 ALL BOXED ALREADY') + '</div><div class="pp' + (im ? '' : ' none') + '" style="' + (im ? 'background-image:url(\'' + E(im) + '\')' : '') + '"></div><b class="nm">' + amzA(r.fnsku, r.sku, r.item) + '</b><div class="fn">' + E(r.fnsku) + '</div>' + mid + '<button class="btn" style="--c:#fff" onclick="ps_ok()">OK</button></div></div>'; }
+  /* v41 — Prep (server v173+) refused a box number: the same 🛑 pop-up as when the phone knows it’s all boxed, with Prep’s own numbers */
+  function stop41(a, m) { try { var fn = String(a[1] || ''), d = lane(LANE), r = d.rows.find(function (x) { return x.fnsku === fn; }) || { fnsku: fn, sku: String(a[2] || ''), item: String(a[3] || fn), units: 0, boxed: 0 };
+      var num = function (re) { var x = re.exec(m); return x ? Number(x[1]) : null; }, all = num(/All (\d+) of/), L = num(/(\d+) labelled/), S = num(/(\d+) shipped/) || 0, Bx = num(/(\d+) in boxes/), only = /^🛑 Only (\d+)/.exec(m);
+      var un = all !== null ? all : L !== null ? Math.max(0, L - S) : r.units, bx = all !== null ? all : Bx !== null ? Bx : r.boxed;
+      popItem('full', Object.assign({}, r, { units: un, boxed: bx }));
+      var o = document.querySelector('#ov .err.pop'); if (o) { var p = o.querySelector('p'), h = o.querySelector('.h'); if (h && only) h.textContent = '🛑 ONLY ' + only[1] + ' LEFT TO BOX'; if (p) p.innerHTML = E(m.replace(/^🛑\s*/, '')) + '<br><b>Nothing was added</b> — check the label on this one.'; } }
+    catch (e) { toast('🛑 ' + String(m).replace(/^🛑\s*/, '').slice(0, 110)); } }
+  /* v42 — if the question is closed any other way, nothing is added */
+  (function () { var ok0 = window.ps_ok; if (typeof ok0 === 'function') window.ps_ok = function () { ASK42 = null; return ok0.apply(this, arguments); }; })();
   window.ps_where = function (fn) { var d = lane(LANE), r = d.rows.find(function (x) { return x.fnsku === fn; }); if (!r) return; var B = d.boxes.filter(function (b) { return r.inBox[b.id]; });
     var im = picOf(r.fnsku, r.sku); MODAL = 'where';
     $('ov').innerHTML = '<div class="ov"><div class="sheet">' + (im ? '<div class="bigpic" style="background-image:url(\'' + E(im) + '\')"></div>' : '<div class="bigpic none">📦</div>') + '<div class="bpn">' + E(r.item) + '</div><div class="bpf">' + E(r.fnsku) + '</div><h3 style="margin-top:12px">📦 Where the ' + r.boxed + ' unit' + (r.boxed === 1 ? ' is' : 's are') + '</h3>' +
